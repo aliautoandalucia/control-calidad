@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Control de Calidad · Auto Cristales Andalucía</title>
+<style>
+  :root{
+    --ink:#0d1b2a;--steel:#1b3a5b;--glass:#2e8bc0;--glass-light:#d6ecf5;
+    --paper:#f5f7f9;--line:#c9d6df;--ok:#1a8754;--ok-bg:#e3f4ea;
+    --warn:#c1440e;--warn-bg:#fbe9e1;--amber:#b8860b;--white:#fff;
+    --shadow:0 2px 10px rgba(13,27,42,.08);--radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:17px;line-height:1.45;-webkit-text-size-adjust:100%;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;font-size:17px;}
+
+  header{position:sticky;top:0;z-index:50;background:var(--steel);color:#fff;display:flex;align-items:center;gap:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+  .logo{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--glass),#5fb3d9);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .logo svg{width:24px;height:24px;}
+  header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px;line-height:1.1;}
+  header .sub{font-size:12px;opacity:.75;font-weight:400;}
+  .sync-pill{margin-left:auto;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);}
+  .sync-dot{width:9px;height:9px;border-radius:50%;background:#7ee0a6;}
+  .sync-dot.off{background:#f0a868;}
+
+  main{padding:16px;max-width:760px;margin:0 auto;padding-bottom:90px;}
+  .screen{display:none;}
+  .screen.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .btn{border:none;border-radius:var(--radius);padding:16px 20px;font-size:17px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:9px;transition:transform .08s,filter .15s;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--glass);color:#fff;width:100%;}
+  .btn-primary:active{filter:brightness(.95);}
+  .btn-ghost{background:#fff;color:var(--steel);border:1.5px solid var(--line);width:100%;}
+  .btn-steel{background:var(--steel);color:#fff;width:100%;}
+  .btn-ok{background:var(--ok);color:#fff;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-row .btn{flex:1;}
+
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:14px;border:1px solid var(--line);}
+  .section-title{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--glass);font-weight:700;margin:4px 0 12px;}
+  label.field{display:block;margin-bottom:14px;}
+  label.field span{display:block;font-size:14px;font-weight:600;color:var(--steel);margin-bottom:6px;}
+  input[type=text],input[type=date],input[type=time],input[type=number],textarea,select{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);}
+  input.up{text-transform:uppercase;}
+  textarea{min-height:70px;resize:vertical;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--glass);box-shadow:0 0 0 3px var(--glass-light);}
+
+  .jobgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .jobcard{background:#fff;border:2px solid var(--line);border-radius:var(--radius);padding:18px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;transition:border-color .12s,background .12s,transform .08s;position:relative;}
+  .jobcard:active{transform:scale(.97);}
+  .jobcard.sel{border-color:var(--glass);background:var(--glass-light);}
+  .jobcard svg{width:46px;height:46px;}
+  .jobcard .jt{font-weight:700;font-size:15px;color:var(--steel);}
+  .jobcard .jd{font-size:12px;color:#6b7c8a;line-height:1.3;}
+  .check-badge{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:var(--glass);color:#fff;display:none;align-items:center;justify-content:center;font-size:14px;}
+  .jobcard.sel .check-badge{display:flex;}
+
+  .checkitem{display:flex;align-items:center;gap:14px;padding:15px 4px;border-bottom:1px solid var(--line);}
+  .checkitem:last-child{border-bottom:none;}
+  .checkitem .ci-label{flex:1;font-weight:600;font-size:16px;}
+  .checkitem .ci-sub{font-size:12px;color:#7c8b97;font-weight:400;display:block;}
+  .toggle{width:62px;height:34px;border-radius:20px;background:#cdd8e0;position:relative;transition:background .18s;flex:0 0 auto;border:none;}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .18s;}
+  .toggle.on{background:var(--ok);}
+  .toggle.on::after{left:31px;}
+
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:10px;margin-top:6px;}
+  .photo-thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#e7ecef;border:1px solid var(--line);}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-thumb .del{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(193,68,14,.92);color:#fff;border:none;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .add-photo{aspect-ratio:1;border:2px dashed var(--glass);border-radius:10px;background:var(--glass-light);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--steel);font-weight:600;font-size:13px;}
+  .add-photo svg{width:30px;height:30px;}
+
+  .steps{display:flex;gap:5px;margin-bottom:18px;}
+  .step-dot{flex:1;height:6px;border-radius:3px;background:var(--line);transition:background .2s;}
+  .step-dot.done{background:var(--glass);}
+
+  .rec{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;}
+  .rec:active{filter:brightness(.98);}
+  .plate{font-family:"Courier New",monospace;font-weight:700;font-size:20px;letter-spacing:1px;background:var(--ink);color:#fff;padding:8px 12px;border-radius:7px;flex:0 0 auto;border:2px solid var(--ink);}
+  .rec-info{flex:1;min-width:0;}
+  .rec-info .rt{font-weight:700;font-size:15px;}
+  .rec-info .rd{font-size:13px;color:#7c8b97;}
+  .rec .chev{color:var(--glass);font-size:22px;}
+  .empty{text-align:center;padding:50px 20px;color:#8a98a4;}
+  .empty svg{width:70px;height:70px;opacity:.4;margin-bottom:14px;}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--glass-light);color:var(--steel);margin-right:5px;margin-top:5px;text-transform:uppercase;letter-spacing:.4px;}
+  .tag.dmg{background:var(--warn-bg);color:var(--warn);}
+
+  .bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 0 max(8px,env(safe-area-inset-bottom));box-shadow:0 -2px 10px rgba(13,27,42,.05);}
+  .navbtn{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9aa7b1;font-size:11px;font-weight:600;padding:4px 18px;}
+  .navbtn svg{width:24px;height:24px;}
+  .navbtn.active{color:var(--glass);}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:13px 22px;border-radius:30px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:90%;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .summary-line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px;gap:12px;}
+  .summary-line:last-child{border:none;}
+  .summary-line .k{color:#7c8b97;}
+  .summary-line .v{font-weight:600;text-align:right;}
+  .pill-ok{color:var(--ok);font-weight:700;}
+  .pill-na{color:#9aa7b1;}
+  h2.screen-title{font-size:22px;margin:4px 0 6px;}
+  .screen-intro{color:#7c8b97;margin:0 0 16px;font-size:14px;}
+  .back-link{background:none;border:none;color:var(--glass);font-weight:600;font-size:15px;padding:8px 0;display:flex;align-items:center;gap:5px;margin-bottom:6px;}
+
+  /* ---- DIAGRAMA COCHE ---- */
+  .carwrap{position:relative;width:100%;max-width:560px;margin:0 auto;}
+  .carview{display:none;}
+  .carview.active{display:block;}
+  .zone{cursor:pointer;transition:fill .15s;}
+  .zone:hover,.zone:active{fill:var(--glass-light);}
+  .zone-tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;}
+  .zone-tab{padding:8px 12px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:600;color:var(--steel);}
+  .zone-tab.active{background:var(--steel);color:#fff;border-color:var(--steel);}
+  .zone-tab .cnt{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:var(--warn);color:#fff;font-size:11px;margin-left:5px;}
+
+  .dmg-marker{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border-radius:50%;background:var(--warn);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.3);}
+
+  .dmg-list-item{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);}
+  .dmg-list-item:last-child{border:none;}
+  .dmg-num{width:28px;height:28px;border-radius:50%;background:var(--warn);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:0 0 auto;}
+  .dmg-thumb{width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid var(--line);flex:0 0 auto;}
+  .dmg-meta{flex:1;min-width:0;}
+  .dmg-meta .dt{font-weight:600;font-size:15px;}
+  .dmg-meta .dz{font-size:12px;color:#7c8b97;}
+
+  /* ---- MODAL ---- */
+  .modal{position:fixed;inset:0;background:rgba(13,27,42,.55);z-index:150;display:none;align-items:flex-end;justify-content:center;}
+  .modal.show{display:flex;}
+  .modal-card{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:22px;max-height:92vh;overflow-y:auto;animation:slideup .25s ease;}
+  @keyframes slideup{from{transform:translateY(40px);}to{transform:none;}}
+  .modal-card h3{margin:0 0 14px;font-size:19px;}
+  .type-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .type-opt{padding:14px 8px;border:2px solid var(--line);border-radius:11px;text-align:center;font-weight:600;font-size:14px;color:var(--steel);background:#fff;}
+  .type-opt.sel{border-color:var(--warn);background:var(--warn-bg);color:var(--warn);}
+
+  /* ---- FIRMA ---- */
+  .sigpad{width:100%;height:200px;border:2px dashed var(--line);border-radius:12px;background:#fff;touch-action:none;display:block;}
+  .sig-done{border:2px solid var(--ok);}
+  .sig-meta{background:var(--ok-bg);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--steel);display:flex;align-items:center;gap:8px;}
+
+  .alert-box{background:var(--warn-bg);border:1px solid #e8b9a4;border-radius:10px;padding:12px 14px;font-size:14px;color:var(--warn);margin-bottom:14px;display:flex;gap:8px;align-items:flex-start;}
+  .ok-box{background:var(--ok-bg);border:1px solid #b5dec6;border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ok);margin-bottom:14px;}
+
+  .searchbar{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:0 14px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .searchbar input{border:none;padding:14px 0;flex:1;background:none;}
+  .searchbar input:focus{outline:none;box-shadow:none;}
+  .searchbar #searchClear{background:#e7ecef;border:none;width:28px;height:28px;border-radius:50%;color:var(--steel);font-size:14px;flex:0 0 auto;}
+  .filter-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .filter-tab{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:14px;font-weight:600;color:var(--steel);}
+  .filter-tab.active{background:var(--steel);color:#fff;border-color:var(--steel);}
+  .fcnt{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:var(--amber);color:#fff;font-size:11px;padding:0 4px;}
+  .filter-tab.active .fcnt{background:#fff;color:var(--amber);}
+  .rec.curso{border-left:5px solid var(--amber);}
+  .rec.completada{border-left:5px solid var(--ok);}
+  .status-tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;margin-top:5px;}
+  .status-tag.curso{background:#fcf3e2;color:var(--amber);}
+  .status-tag.completada{background:var(--ok-bg);color:var(--ok);}
+  .no-results{text-align:center;padding:40px 20px;color:#8a98a4;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l1.5-4.5A2 2 0 016.4 3h11.2a2 2 0 011.9 1.5L21 9"/>
+      <path d="M3 9h18v7a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1H6v1a1 1 0 01-1 1H4a1 1 0 01-1-1z"/>
+    </svg>
+  </div>
+  <div>
+    <h1>Control de Calidad</h1>
+    <div class="sub">Auto Cristales Andalucía</div>
+  </div>
+  <div class="sync-pill"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Guardado</span></div>
+</header>
+
+<main>
+
+  <!-- ====== LISTA ====== -->
+  <section class="screen active" id="screen-list">
+    <button class="btn btn-primary" style="margin-bottom:14px;" onclick="startNew()">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Nueva ficha
+    </button>
+
+    <div class="searchbar">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#7c8b97" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="searchBox" class="up" placeholder="Buscar por matrícula o modelo…" oninput="renderList()" autocomplete="off">
+      <button id="searchClear" onclick="document.getElementById('searchBox').value='';renderList();" style="display:none;">✕</button>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="todas" onclick="setFilter('todas')">Todas</button>
+      <button class="filter-tab" data-filter="curso" onclick="setFilter('curso')">En curso <span id="cntCurso" class="fcnt"></span></button>
+      <button class="filter-tab" data-filter="completada" onclick="setFilter('completada')">Completadas</button>
+    </div>
+
+    <div id="recordList"></div>
+  </section>
+
+  <!-- ====== PASO 1: DATOS ====== -->
+  <section class="screen" id="screen-data">
+    <button class="back-link" onclick="go('list')">‹ Cancelar</button>
+    <div class="steps" data-steps></div>
+    <h2 class="screen-title">Datos del trabajo</h2>
+    <p class="screen-intro">Rellena la matrícula y el operario antes de revisar el coche.</p>
+    <div class="card">
+      <label class="field"><span>Matrícula</span><input type="text" class="up" id="f-plate" placeholder="1234 ABC" autocomplete="off" oninput="checkPlateExists()"></label>
+      <div id="plateNotice" style="display:none;"></div>
+      <label class="field"><span>Marca y modelo</span><input type="text" class="up" id="f-model" placeholder="SEAT LEÓN" autocomplete="off"></label>
+      <label class="field"><span>Orden de trabajo</span><input type="text" class="up" id="f-ot" placeholder="OT-0000" autocomplete="off"></label>
+      <label class="field"><span>Operario que recibe el vehículo</span><input type="text" id="f-worker" placeholder="Nombre del trabajador" autocomplete="off"></label>
+      <label class="field"><span>Cliente (opcional)</span><input type="text" id="f-client" placeholder="Nombre del cliente" autocomplete="off"></label>
+      <label class="field" style="margin:0;"><span>Email del cliente (opcional)</span><input type="email" id="f-email" placeholder="cliente@correo.com" autocomplete="off" style="text-transform:none;"></label>
+    </div>
+    <button class="btn btn-primary" onclick="toStep('intake')">Revisar estado del coche ›</button>
+  </section>
+
+  <!-- ====== PASO 2: PERITAJE FOTOS CONTORNO ====== -->
+  <section class="screen" id="screen-intake">
+    <button class="back-link" onclick="toStep('data')">‹ Atrás</button>
+    <div class="steps" data-steps></div>
+    <h2 class="screen-title">Estado de entrada · Fotos</h2>
+    <p class="screen-intro">Haz fotos de las cuatro caras del coche y del techo <b>antes</b> de tocarlo. Es la prueba del estado en que llegó.</p>
+    <div class="card">
+      <div class="photo-grid" id="intakePhotoGrid"></div>
+      <input type="file" id="intakeCam" accept="image/*" capture="environment" style="display:none" multiple>
+    </div>
+    <button class="btn btn-primary" onclick="toStep('damage')">Marcar daños existentes ›</button>
+  </section>
+
+  <!-- ====== PASO 3: DIAGRAMA DAÑOS ====== -->
+  <section class="screen" id="screen-damage">
+    <button class="back-link" onclick="toStep('intake')">‹ Atrás</button>
+    <div class="steps" data-steps></div>
+    <h2 class="screen-title">Daños existentes</h2>
+    <p class="screen-intro">Toca sobre el coche donde haya un daño que <b>ya traía</b>. Cada marca pide tipo, nota y foto.</p>
+
+    <div class="zone-tabs" id="zoneTabs"></div>
+    <div class="card" style="padding:10px;">
+      <div class="carwrap" id="carWrap"></div>
+    </div>
+
+    <div class="card" id="dmgListCard" style="display:none;">
+      <div class="section-title">Daños registrados</div>
+      <div id="dmgList"></div>
+    </div>
+
+    <div class="ok-box" id="noDmgBox">Si el coche no tiene daños apreciables, puedes continuar sin marcar nada. Quedará registrado como "sin daños previos".</div>
+
+    <button class="btn btn-primary" onclick="toStep('sign')">Firma del cliente ›</button>
+  </section>
+
+  <!-- ====== PASO 4: FIRMA ====== -->
+  <section class="screen" id="screen-sign">
+    <button class="back-link" onclick="toStep('damage')">‹ Atrás</button>
+    <div class="steps" data-steps></div>
+    <h2 class="screen-title">Conformidad del cliente</h2>
+    <p class="screen-intro">El cliente firma confirmando el estado de entrada y los daños marcados. Se registra la fecha y la hora exactas.</p>
+
+    <div class="card">
+      <div id="dmgSummaryForSign"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Firma</div>
+      <canvas class="sigpad" id="sigPad"></canvas>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn btn-ghost" onclick="clearSig()">Borrar</button>
+      </div>
+      <div class="sig-meta" id="sigMeta" style="display:none;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <span id="sigMetaTxt"></span>
+      </div>
+    </div>
+
+    <div class="card" id="sigEmailCard" style="display:none;">
+      <div class="section-title">Enviar al cliente</div>
+      <p style="color:#7c8b97;font-size:14px;margin:0 0 12px;">Se descarga el PDF y se abre el correo. Adjunta el archivo recién descargado y pulsa enviar.</p>
+      <button class="btn btn-steel" onclick="emailPDF(draft)">✉ Enviar PDF al cliente</button>
+    </div>
+
+    <button class="btn btn-primary" onclick="confirmSign()">Confirmar firma y continuar ›</button>
+  </section>
+
+  <!-- ====== PASO 5: TIPO ====== -->
+  <section class="screen" id="screen-type">
+    <button class="back-link" onclick="toStep('sign')">‹ Atrás</button>
+    <div class="steps" data-steps></div>
+    <h2 class="screen-title">¿Qué se ha sustituido?</h2>
+    <p class="screen-intro">Marca todos los cristales que se han cambiado en este trabajo.</p>
+    <div class="jobgrid" id="jobGrid"></div>
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="toStep('checks')">Continuar ›</button>
+  </section>
+
+  <!-- ====== PASO 6: COMPROBACIONES ====== -->
+  <section class="screen" id="screen-checks">
+    <button class="back-link" onclick="toStep('type')">‹ Atrás</button>
+    <div class="steps" data-steps></div>
+    <h2 class="screen-title">Comprobaciones</h2>
+    <div class="card">
+      <div class="section-title">Adhesivo</div>
+      <div class="btn-row">
+        <label class="field" style="margin:0;"><span>Hora aplicación</span><input type="time" id="f-adhtime"></label>
+        <label class="field" style="margin:0;"><span>Temperatura ºC</span><input type="number" id="f-adhtemp" placeholder="21"></label>
+      </div>
+    </div>
+    <div id="checkSections"></div>
+    <button class="btn btn-primary" onclick="toStep('final')">Continuar ›</button>
+  </section>
+
+  <!-- ====== PASO 7: FINAL + FOTOS ====== -->
+  <section class="screen" id="screen-final">
+    <button class="back-link" onclick="toStep('checks')">‹ Atrás</button>
+    <div class="steps" data-steps></div>
+    <h2 class="screen-title">Trabajo terminado</h2>
+    <p class="screen-intro">Fotos del montaje acabado, sellado y accesorios.</p>
+    <div class="card">
+      <div class="photo-grid" id="finalPhotoGrid"></div>
+      <input type="file" id="finalCam" accept="image/*" capture="environment" style="display:none" multiple>
+    </div>
+    <div class="card">
+      <label class="field" style="margin:0;"><span>Observaciones</span><textarea id="f-notes" placeholder="Notas, calibración ADAS, incidencias…"></textarea></label>
+    </div>
+    <div class="card">
+      <div class="section-title">Entrega al cliente</div>
+      <div class="checkitem"><div class="ci-label">Orden de trabajo sellada</div><button class="toggle" data-doc="ot"></button></div>
+      <div class="checkitem"><div class="ci-label">Factura</div><button class="toggle" data-doc="fra"></button></div>
+      <div class="checkitem"><div class="ci-label">Certificado de garantía</div><button class="toggle" data-doc="gar"></button></div>
+    </div>
+    <button class="btn btn-ok btn-primary" onclick="finishRecord()">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      Guardar ficha
+    </button>
+  </section>
+
+  <!-- ====== DETALLE ====== -->
+  <section class="screen" id="screen-detail">
+    <button class="back-link" onclick="go('list')">‹ Volver</button>
+    <div id="detailBody"></div>
+  </section>
+
+</main>
+
+<!-- MODAL DAÑO -->
+<div class="modal" id="dmgModal">
+  <div class="modal-card">
+    <h3>Nuevo daño · <span id="dmgZoneName"></span></h3>
+    <div class="section-title">Tipo de daño</div>
+    <div class="type-pick" id="dmgTypePick"></div>
+    <label class="field"><span>Nota (opcional)</span><input type="text" id="dmgNote" placeholder="Ej: rayajo de 10cm en puerta"></label>
+    <div class="alert-box" id="dmgPhotoWarn">Es obligatorio hacer una foto del daño.</div>
+    <div class="photo-grid" id="dmgPhotoPreview" style="margin-bottom:14px;"></div>
+    <input type="file" id="dmgCam" accept="image/*" capture="environment" style="display:none">
+    <button class="btn btn-ghost" style="margin-bottom:10px;" onclick="document.getElementById('dmgCam').click()">📷 Hacer foto del daño</button>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeDmgModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveDmg()">Guardar daño</button>
+    </div>
+  </div>
+</div>
+
+<div class="bottomnav">
+  <button class="navbtn active" id="nav-list" onclick="go('list')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Fichas
+  </button>
+  <button class="navbtn" id="nav-new" onclick="startNew()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>Nueva
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* ============================================================
+   FIREBASE — sincronización nube + caché local (offline)
+   ============================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot, enableIndexedDbPersistence }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref as sRef, uploadString, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAn5iS7oF7SoUAFYCgM4vSeXyhr7hy_UJQ",
+  authDomain: "auto-cristales-qc.firebaseapp.com",
+  projectId: "auto-cristales-qc",
+  storageBucket: "auto-cristales-qc.firebasestorage.app",
+  messagingSenderId: "320939188296",
+  appId: "1:320939188296:web:689275b66f519fc6e9787d"
+};
+
+let fbApp=null, db=null, storage=null, fbReady=false;
+try{
+  fbApp=initializeApp(firebaseConfig);
+  db=getFirestore(fbApp);
+  storage=getStorage(fbApp);
+  fbReady=true;
+  // persistencia offline de Firestore (cola de escritura sin conexión)
+  enableIndexedDbPersistence(db).catch(()=>{});
+}catch(e){ console.warn("Firebase no disponible, modo local:",e); fbReady=false; }
+
+const COL="fichas";              // colección en Firestore
+const DB_KEY="aca_qc_v2";        // caché local (espejo)
+
+/* -------- caché local (lectura SÍNCRONA para la UI) -------- */
+function loadAll(){ try{return JSON.parse(localStorage.getItem(DB_KEY))||[];}catch(e){return[];} }
+function writeCache(arr){ try{localStorage.setItem(DB_KEY,JSON.stringify(arr));}catch(e){console.warn('cache llena',e);} }
+
+/* saveAll: escribe caché al momento y empuja a la nube en segundo plano */
+function saveAll(arr){
+  writeCache(arr);
+  flashSync();
+  if(fbReady){ arr.forEach(r=>pushRecord(r)); }
+}
+/* guardar/actualizar UNA ficha (más eficiente que recorrer todo) */
+async function pushRecord(rec){
+  if(!fbReady)return;
+  try{
+    setSyncing(true);
+    const clean=await uploadPhotos(rec);   // sube fotos base64 → URLs
+    // reflejar URLs en la caché local para no resubirlas
+    mergeIntoCache(clean);
+    await setDoc(doc(db,COL,String(clean.id)), stripUndefined(clean));
+    setSyncing(false);
+  }catch(e){ console.warn("push falló (se reintentará):",e); setSyncing(false,true); }
+}
+async function removeRecordCloud(id){
+  if(!fbReady)return;
+  try{ await deleteDoc(doc(db,COL,String(id))); }catch(e){ console.warn("delete cloud falló:",e); }
+}
+
+/* -------- subida de fotos a Storage -------- */
+async function uploadOne(dataUrl, path){
+  const r=sRef(storage, path);
+  await uploadString(r, dataUrl, 'data_url');
+  return await getDownloadURL(r);
+}
+async function uploadPhotos(recIn){
+  const rec=JSON.parse(JSON.stringify(recIn)); // copia
+  const base="fichas/"+rec.id+"/";
+  // intake
+  if(Array.isArray(rec.intakePhotos)){
+    for(let i=0;i<rec.intakePhotos.length;i++){
+      const p=rec.intakePhotos[i];
+      if(typeof p==='string'&&p.startsWith('data:')){ rec.intakePhotos[i]=await uploadOne(p,base+"intake_"+i+"_"+Date.now()+".jpg"); }
+    }
+  }
+  // final
+  if(Array.isArray(rec.finalPhotos)){
+    for(let i=0;i<rec.finalPhotos.length;i++){
+      const p=rec.finalPhotos[i];
+      if(typeof p==='string'&&p.startsWith('data:')){ rec.finalPhotos[i]=await uploadOne(p,base+"final_"+i+"_"+Date.now()+".jpg"); }
+    }
+  }
+  // daños
+  if(Array.isArray(rec.damages)){
+    for(let i=0;i<rec.damages.length;i++){
+      const d=rec.damages[i];
+      if(d&&typeof d.photo==='string'&&d.photo.startsWith('data:')){ d.photo=await uploadOne(d.photo,base+"dmg_"+i+"_"+Date.now()+".jpg"); }
+    }
+  }
+  // firma
+  if(typeof rec.signature==='string'&&rec.signature.startsWith('data:')){
+    rec.signature=await uploadOne(rec.signature,base+"firma_"+Date.now()+".png");
+  }
+  return rec;
+}
+function mergeIntoCache(rec){
+  const all=loadAll();const i=all.findIndex(x=>x.id===rec.id);
+  if(i>=0)all[i]=rec; else all.unshift(rec);
+  writeCache(all);
+}
+function stripUndefined(o){ return JSON.parse(JSON.stringify(o)); }
+
+/* -------- escucha en tiempo real: nube → caché -------- */
+function startCloudListener(){
+  if(!fbReady)return;
+  onSnapshot(collection(db,COL),snap=>{
+    const cloud=[];snap.forEach(d=>cloud.push(d.data()));
+    // fusionar: la nube manda, pero conservamos locales aún no subidas
+    const local=loadAll();
+    const cloudIds=new Set(cloud.map(r=>String(r.id)));
+    const onlyLocal=local.filter(r=>!cloudIds.has(String(r.id)));
+    const merged=[...cloud,...onlyLocal];
+    writeCache(merged);
+    if(document.getElementById('screen-list').classList.contains('active')&&window.renderList) window.renderList();
+    flashSync();
+  },err=>console.warn("listener:",err));
+}
+
+/* -------- indicador de estado -------- */
+let syncBusy=false, syncErr=false;
+function setSyncing(on,err){ syncBusy=on; if(err)syncErr=true; if(!on&&!err)syncErr=false; flashSync(); }
+function flashSync(){
+  const dot=document.getElementById('syncDot'),txt=document.getElementById('syncTxt');
+  if(!dot||!txt)return;
+  if(!fbReady){ dot.classList.add('off'); txt.textContent='Solo local'; return; }
+  if(!navigator.onLine){ dot.classList.add('off'); txt.textContent='Sin WiFi · en cola'; return; }
+  if(syncBusy){ dot.classList.remove('off'); txt.textContent='Subiendo…'; return; }
+  dot.classList.remove('off'); txt.textContent='En la nube ✓';
+}
+window.addEventListener('online',()=>{ flashSync(); if(fbReady)loadAll().forEach(r=>pushRecord(r)); });
+window.addEventListener('offline',flashSync);
+
+/* exponer al resto del script (que es clásico) */
+window.__cloudLoadAll=loadAll;
+window.__cloudSaveAll=saveAll;
+window.__cloudFlash=flashSync;
+window.pushRecord=pushRecord;
+window.removeRecordCloud=removeRecordCloud;
+window.__fbReady=()=>fbReady;
+
+// arrancar
+startCloudListener();
+window.addEventListener('load',()=>{ flashSync(); if(window.renderList)renderList(); });
+</script>
+
+<script>
+/* ============================================================
+   APP (lógica de interfaz)
+   ============================================================ */
+/* Primitivas de datos: usan la capa de nube (window.*) si está lista,
+   y si no, caen a localStorage directo (modo local / arranque). */
+const _DBKEY="aca_qc_v2";
+function loadAll(){
+  if(window.__cloudLoadAll)return window.__cloudLoadAll();
+  try{return JSON.parse(localStorage.getItem(_DBKEY))||[];}catch(e){return[];}
+}
+function saveAll(arr){
+  if(window.__cloudSaveAll){window.__cloudSaveAll(arr);return;}
+  try{localStorage.setItem(_DBKEY,JSON.stringify(arr));}catch(e){}
+  flashSync();
+}
+function flashSync(){
+  if(window.__cloudFlash){window.__cloudFlash();return;}
+  const dot=document.getElementById('syncDot'),txt=document.getElementById('syncTxt');
+  if(!dot||!txt)return;
+  if(navigator.onLine){dot.classList.remove('off');txt.textContent='Guardado';}
+  else{dot.classList.add('off');txt.textContent='Sin WiFi · local';}
+}
+/* ============================================================
+   PASOS DEL FLUJO
+   ============================================================ */
+const FLOW=['data','intake','damage','sign','type','checks','final'];
+function paintSteps(current){
+  const i=FLOW.indexOf(current);
+  document.querySelectorAll('[data-steps]').forEach(c=>{
+    c.innerHTML=FLOW.map((_,idx)=>`<span class="step-dot ${idx<=i?'done':''}"></span>`).join('');
+  });
+}
+
+/* ============================================================
+   TIPOS DE CRISTAL
+   ============================================================ */
+const ICONS={
+  windshield:'<svg viewBox="0 0 48 48" fill="none" stroke="#1b3a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 30 L13 14 a4 4 0 0 1 3.8-3 H31.2 a4 4 0 0 1 3.8 3 L40 30 a3 3 0 0 1-3 4 H11 a3 3 0 0 1-3-4Z"/><path d="M24 11 V34"/></svg>',
+  side:'<svg viewBox="0 0 48 48" fill="none" stroke="#1b3a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="12" width="32" height="24" rx="3"/><path d="M24 12 V36"/></svg>',
+  rear:'<svg viewBox="0 0 48 48" fill="none" stroke="#1b3a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16 h28 l-3 18 a3 3 0 0 1-3 2.5 H16 a3 3 0 0 1-3-2.5Z"/><path d="M14 22 h20M15 28 h18"/></svg>',
+  roof:'<svg viewBox="0 0 48 48" fill="none" stroke="#1b3a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="30" height="30" rx="4"/><path d="M9 24 h30M24 9 v30"/></svg>',
+  fixed:'<svg viewBox="0 0 48 48" fill="none" stroke="#1b3a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 h22 l6 10 -6 10 H10 Z"/></svg>',
+  film:'<svg viewBox="0 0 48 48" fill="none" stroke="#1b3a5b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="12" width="32" height="24" rx="3"/><path d="M14 18 h20M14 24 h20M14 30 h20" stroke-width="1.8" opacity="0.6"/><circle cx="34" cy="14" r="5" fill="#f0c040" stroke="#b8860b" stroke-width="1.5"/></svg>'
+};
+const JOB_TYPES={
+  windshield:{name:"Parabrisas",desc:"Luna delantera",checks:[
+    {l:"Retrovisor interior"},{l:"Sensor de lluvia"},{l:"Cámara ADAS / calibración",sub:"Si lleva asistencia"},
+    {l:"Limpiaparabrisas"},{l:"Dispositivos térmicos (antiempañado)"},{l:"Guarnecidos interiores"},{l:"Molduras exteriores"}]},
+  side:{name:"Luna lateral",desc:"Descendente o fija",checks:[
+    {l:"Mecanismo de elevalunas",sub:"Solo descendente"},{l:"Cierre puerta",sub:"Centralizado, manetas"},
+    {l:"Altavoz de puerta"},{l:"Apertura lateral abatible",sub:"Si aplica"},{l:"Guarnecidos interiores"},{l:"Molduras / lameluna"}]},
+  rear:{name:"Luneta trasera",desc:"Cristal trasero",checks:[
+    {l:"Limpiaparabrisas trasero"},{l:"Dispositivos térmicos (antiempañado)"},{l:"Luz de freno"},
+    {l:"Guarnecidos interiores"},{l:"Molduras exteriores"}]},
+  roof:{name:"Techo panorámico",desc:"Cristal de techo",checks:[
+    {l:"Mecanismo apertura / cortina"},{l:"Estanqueidad y drenajes",sub:"Comprobar desagües"},
+    {l:"Sellado perimetral"},{l:"Guarnecidos interiores"},{l:"Iluminación / sensores techo"}]},
+  fixed:{name:"Cristal fijo / custodia",desc:"Ventanilla fija",checks:[
+    {l:"Sellado perimetral"},{l:"Guarnecidos interiores"},{l:"Molduras exteriores"},{l:"Estanqueidad",sub:"Sin filtraciones"}]},
+  film:{name:"Lámina solar",desc:"Tintado / control solar",checks:[
+    {l:"Mecanismo de elevalunas",sub:"Si la ventanilla baja, comprobar que sube y baja bien"},
+    {l:"Sin burbujas ni pliegues",sub:"Acabado de la lámina"},
+    {l:"Bordes bien sellados"},
+    {l:"Visibilidad correcta",sub:"Sin distorsiones"},
+    {l:"Guarnecidos / juntas recolocados"}]}
+};
+
+/* ============================================================
+   ZONAS DEL COCHE (vistas) + SVG de cada vista
+   ============================================================ */
+const ZONES=[
+  {id:'front',name:'Frontal'},
+  {id:'rear',name:'Trasera'},
+  {id:'left',name:'Lateral izq.'},
+  {id:'right',name:'Lateral der.'},
+  {id:'roof',name:'Techo'},
+  {id:'fl',name:'Esq. del. izq.'},
+  {id:'fr',name:'Esq. del. der.'},
+  {id:'rl',name:'Esq. tras. izq.'},
+  {id:'rr',name:'Esq. tras. der.'},
+];
+// SVG simplificado de coche por vista. viewBox 0 0 400 240
+function carSVG(view){
+  const body='fill:#eef3f6;stroke:#1b3a5b;stroke-width:2.5;';
+  const glass='fill:#cfe6f2;stroke:#1b3a5b;stroke-width:2;';
+  const wheel='fill:#33414d;';
+  if(view==='left'||view==='right'){
+    return `<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" id="carSvg" style="width:100%;height:auto;">
+      <path class="zone" data-z="${view}" style="${body}" d="M30 140 L55 95 Q70 75 110 72 L250 70 Q300 72 330 100 L370 120 Q378 125 376 140 L375 150 Q374 158 360 158 L40 158 Q28 156 30 144 Z"/>
+      <path style="${glass}" d="M120 78 L235 76 Q265 78 290 100 L130 100 Q120 92 120 80 Z"/>
+      <line x1="200" y1="76" x2="200" y2="100" stroke="#1b3a5b" stroke-width="2"/>
+      <circle cx="115" cy="158" r="26" style="${wheel}"/><circle cx="115" cy="158" r="11" fill="#7a8a96"/>
+      <circle cx="300" cy="158" r="26" style="${wheel}"/><circle cx="300" cy="158" r="11" fill="#7a8a96"/>
+      <text x="200" y="185" text-anchor="middle" fill="#7c8b97" font-size="13" font-family="sans-serif">${view==='left'?'◄ Lado conductor':'Lado acompañante ►'}</text>
+    </svg>`;
+  }
+  if(view==='front'||view==='rear'){
+    return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg" id="carSvg" style="width:100%;height:auto;">
+      <path class="zone" data-z="${view}" style="${body}" d="M90 175 L98 105 Q103 78 140 75 L260 75 Q297 78 302 105 L310 175 Q311 185 300 185 L100 185 Q89 185 90 175 Z"/>
+      <path style="${glass}" d="M120 105 Q125 88 150 86 L250 86 Q275 88 280 105 L275 120 L125 120 Z"/>
+      <rect x="110" y="135" width="180" height="30" rx="6" style="${glass}"/>
+      <circle cx="120" cy="150" r="6" fill="#f0c040"/><circle cx="280" cy="150" r="6" fill="#f0c040"/>
+      <text x="200" y="208" text-anchor="middle" fill="#7c8b97" font-size="13" font-family="sans-serif">${view==='front'?'Vista frontal':'Vista trasera'}</text>
+    </svg>`;
+  }
+  if(view==='roof'){
+    return `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg" id="carSvg" style="width:100%;height:auto;">
+      <path class="zone" data-z="roof" style="${body}" d="M150 25 Q200 18 250 25 Q295 32 300 90 L302 160 Q300 212 250 218 Q200 224 150 218 Q100 212 98 160 L100 90 Q105 32 150 25 Z"/>
+      <rect x="135" y="55" width="130" height="55" rx="10" style="${glass}"/>
+      <rect x="135" y="130" width="130" height="70" rx="10" style="${glass}"/>
+      <text x="200" y="234" text-anchor="middle" fill="#7c8b97" font-size="13" font-family="sans-serif">Techo (visto desde arriba)</text>
+    </svg>`;
+  }
+  // esquinas: vista 3/4
+  const labels={fl:'Esquina delantera izquierda',fr:'Esquina delantera derecha',rl:'Esquina trasera izquierda',rr:'Esquina trasera derecha'};
+  return `<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg" id="carSvg" style="width:100%;height:auto;">
+    <path class="zone" data-z="${view}" style="${body}" d="M60 150 Q70 100 120 90 L230 80 Q300 82 330 120 L350 150 Q355 165 340 168 L80 170 Q58 168 60 152 Z"/>
+    <path style="${glass}" d="M135 95 L225 86 Q270 90 295 118 L150 120 Q135 108 135 96 Z"/>
+    <circle cx="130" cy="168" r="22" style="${wheel}"/><circle cx="300" cy="160" r="22" style="${wheel}"/>
+    <text x="200" y="200" text-anchor="middle" fill="#7c8b97" font-size="12" font-family="sans-serif">${labels[view]}</text>
+  </svg>`;
+}
+
+const DMG_TYPES=[
+  {id:'rayajo',name:'Rayajo'},{id:'golpe',name:'Golpe'},
+  {id:'abolladura',name:'Abolladura'},{id:'falta',name:'Falta pieza'},
+  {id:'rotura',name:'Rotura/grieta'},{id:'otro',name:'Otro'}
+];
+
+/* ============================================================
+   ESTADO FICHA
+   ============================================================ */
+let draft=null, currentZone='front', sig={drawing:false,has:false};
+let pendingDmg=null; // daño en edición dentro del modal
+
+function newDraft(){
+  return {id:Date.now(),plate:"",model:"",ot:"",worker:"",client:"",email:"",
+    intakePhotos:[],damages:[],signature:null,signedAt:null,
+    types:[],checks:{},adhTime:"",adhTemp:"",finalPhotos:[],notes:"",docs:{},
+    status:"curso",lastStep:"data",
+    created:new Date().toISOString(),updated:new Date().toISOString()};
+}
+
+/* Autoguarda el draft actual en la lista (sin cerrarlo) */
+function autosave(step){
+  if(!draft)return;
+  if(step)draft.lastStep=step;
+  draft.updated=new Date().toISOString();
+  // no guardar si aún no hay matrícula (evita fichas vacías)
+  if(!draft.plate)return;
+  const all=loadAll();
+  const idx=all.findIndex(r=>r.id===draft.id);
+  if(idx>=0)all[idx]=draft; else all.unshift(draft);
+  // escribir caché al momento (rápido) y subir SOLO esta ficha
+  try{localStorage.setItem('aca_qc_v2',JSON.stringify(all));}catch(e){}
+  flashSync();
+  if(window.__fbReady&&window.__fbReady()&&window.pushRecord){window.pushRecord(draft);}
+}
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
+function go(s){
+  if(s==='list'){saveDraftFromUI();autosave();}
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.getElementById('screen-'+s).classList.add('active');
+  document.getElementById('nav-list').classList.toggle('active',s==='list');
+  window.scrollTo(0,0);
+  if(s==='list')renderList();
+}
+function toStep(step){
+  saveDraftFromUI();
+  autosave(step);
+  paintSteps(step);
+  go(step);
+  if(step==='intake')renderIntakePhotos();
+  if(step==='damage')renderDamage();
+  if(step==='sign')renderSign();
+  if(step==='type')renderTypes();
+  if(step==='checks')renderChecks();
+  if(step==='final')renderFinal();
+}
+function startNew(){draft=newDraft();sig={drawing:false,has:false};fillDataUI();paintSteps('data');go('data');}
+
+/* ============================================================
+   PASO 1
+   ============================================================ */
+function fillDataUI(){f('f-plate',draft.plate);f('f-model',draft.model);f('f-ot',draft.ot);f('f-worker',draft.worker);f('f-client',draft.client);f('f-email',draft.email);checkPlateExists();}
+
+// Devuelve todas las fichas (visitas) de una matrícula, excluyendo la actual
+function historyForPlate(plate,excludeId){
+  const p=(plate||'').toUpperCase().replace(/\s+/g,'');
+  if(!p)return [];
+  return loadAll().filter(r=>r.id!==excludeId && (r.plate||'').toUpperCase().replace(/\s+/g,'')===p)
+    .sort((a,b)=>new Date(b.created)-new Date(a.created));
+}
+// Aviso al escribir una matrícula que ya existe
+function checkPlateExists(){
+  const box=document.getElementById('plateNotice');if(!box||!draft)return;
+  const plate=v('f-plate');
+  const prev=historyForPlate(plate,draft.id);
+  if(prev.length===0){box.style.display='none';box.innerHTML='';return;}
+  const last=prev[0];const ld=new Date(last.created);
+  const lastTypes=last.types.map(t=>JOB_TYPES[t]?.name).filter(Boolean).join(', ')||'trabajo';
+  box.style.display='block';
+  box.innerHTML=`<div class="alert-box" style="background:var(--glass-light);border-color:#a9d3e6;color:var(--steel);margin-bottom:14px;">
+    <span>ℹ️ Esta matrícula ya tiene <b>${prev.length} ficha${prev.length>1?'s':''}</b> anterior${prev.length>1?'es':''}. Última: ${ld.toLocaleDateString('es-ES')} (${lastTypes}).
+    <a href="#" onclick="showPlateHistory('${plate.toUpperCase()}');return false;" style="color:var(--glass);font-weight:700;text-decoration:underline;">Ver historial</a>.
+    <br>Puedes continuar; se creará una nueva visita.</span></div>`;
+}
+function f(id,v){const e=document.getElementById(id);if(e)e.value=v||"";}
+function v(id){const e=document.getElementById(id);return e?e.value.trim():"";}
+function saveDraftFromUI(){
+  if(!draft)return;
+  if(document.getElementById('f-plate')) {
+    draft.plate=v('f-plate').toUpperCase();draft.model=v('f-model').toUpperCase();
+    draft.ot=v('f-ot').toUpperCase();draft.worker=v('f-worker');draft.client=v('f-client');draft.email=v('f-email');
+  }
+  if(document.getElementById('screen-checks').classList.contains('active')){draft.adhTime=v('f-adhtime');draft.adhTemp=v('f-adhtemp');}
+  if(document.getElementById('screen-final').classList.contains('active')){draft.notes=v('f-notes');}
+}
+
+/* ============================================================
+   COMPRESIÓN DE FOTOS
+   ============================================================ */
+function compress(dataUrl,cb,max=1280,q=0.7){
+  const img=new Image();
+  img.onload=()=>{const sc=Math.min(1,max/Math.max(img.width,img.height));
+    const cv=document.createElement('canvas');cv.width=img.width*sc;cv.height=img.height*sc;
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);cb(cv.toDataURL('image/jpeg',q));};
+  img.src=dataUrl;
+}
+function handleFiles(files,arr,after){
+  [...files].forEach(file=>{const r=new FileReader();
+    r.onload=ev=>compress(ev.target.result,c=>{arr.push(c);after();});r.readAsDataURL(file);});
+}
+
+/* ====== PASO 2 fotos contorno ====== */
+function renderIntakePhotos(){
+  const grid=document.getElementById('intakePhotoGrid');grid.innerHTML="";
+  draft.intakePhotos.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='photo-thumb';
+    d.innerHTML=`<img src="${p}"><button class="del" onclick="delIntake(${i})">✕</button>`;grid.appendChild(d);});
+  const add=document.createElement('button');add.className='add-photo';
+  add.innerHTML=camIcon()+'Foto coche';add.onclick=()=>document.getElementById('intakeCam').click();grid.appendChild(add);
+}
+function delIntake(i){draft.intakePhotos.splice(i,1);renderIntakePhotos();autosave();}
+document.getElementById('intakeCam').addEventListener('change',e=>{handleFiles(e.target.files,draft.intakePhotos,()=>{renderIntakePhotos();autosave();});e.target.value="";});
+function camIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';}
+
+/* ============================================================
+   PASO 3 — DIAGRAMA DE DAÑOS
+   ============================================================ */
+function renderDamage(){
+  // tabs
+  const tabs=document.getElementById('zoneTabs');tabs.innerHTML="";
+  ZONES.forEach(z=>{
+    const cnt=draft.damages.filter(d=>d.zone===z.id).length;
+    const b=document.createElement('button');b.className='zone-tab'+(z.id===currentZone?' active':'');
+    b.innerHTML=z.name+(cnt?`<span class="cnt">${cnt}</span>`:'');
+    b.onclick=()=>{currentZone=z.id;renderDamage();};tabs.appendChild(b);});
+  // car view
+  const wrap=document.getElementById('carWrap');
+  wrap.innerHTML=carSVG(currentZone);
+  // markers de esta vista
+  draft.damages.filter(d=>d.zone===currentZone).forEach((d,i)=>{
+    const m=document.createElement('div');m.className='dmg-marker';
+    m.style.left=d.x+'%';m.style.top=d.y+'%';m.textContent=globalIndex(d)+1;
+    wrap.appendChild(m);});
+  // tap para añadir
+  const svg=wrap.querySelector('#carSvg');
+  if(svg){svg.addEventListener('click',e=>{
+    const rect=svg.getBoundingClientRect();
+    const x=((e.clientX-rect.left)/rect.width)*100;
+    const y=((e.clientY-rect.top)/rect.height)*100;
+    openDmgModal(x,y);
+  });}
+  renderDmgList();
+}
+function globalIndex(d){return draft.damages.indexOf(d);}
+function renderDmgList(){
+  const card=document.getElementById('dmgListCard'),list=document.getElementById('dmgList');
+  const noBox=document.getElementById('noDmgBox');
+  if(draft.damages.length===0){card.style.display='none';noBox.style.display='block';return;}
+  card.style.display='block';noBox.style.display='none';list.innerHTML="";
+  draft.damages.forEach((d,i)=>{
+    const zn=ZONES.find(z=>z.id===d.zone)?.name||'';
+    const tn=DMG_TYPES.find(t=>t.id===d.type)?.name||'';
+    const row=document.createElement('div');row.className='dmg-list-item';
+    row.innerHTML=`<div class="dmg-num">${i+1}</div>
+      ${d.photo?`<img class="dmg-thumb" src="${d.photo}">`:''}
+      <div class="dmg-meta"><div class="dt">${tn}${d.note?' · '+d.note:''}</div><div class="dz">${zn}</div></div>
+      <button class="del" style="position:static;background:#e7ecef;color:var(--warn);width:30px;height:30px;border-radius:8px;border:none;" onclick="delDmg(${i})">✕</button>`;
+    list.appendChild(row);});
+}
+function delDmg(i){draft.damages.splice(i,1);renderDamage();autosave();}
+
+/* modal de daño */
+function openDmgModal(x,y){
+  pendingDmg={zone:currentZone,x,y,type:null,note:"",photo:null};
+  document.getElementById('dmgZoneName').textContent=ZONES.find(z=>z.id===currentZone).name;
+  // tipos
+  const tp=document.getElementById('dmgTypePick');tp.innerHTML="";
+  DMG_TYPES.forEach(t=>{const b=document.createElement('button');b.className='type-opt';b.textContent=t.name;
+    b.onclick=()=>{pendingDmg.type=t.id;[...tp.children].forEach(c=>c.classList.remove('sel'));b.classList.add('sel');};
+    tp.appendChild(b);});
+  document.getElementById('dmgNote').value="";
+  document.getElementById('dmgPhotoPreview').innerHTML="";
+  document.getElementById('dmgPhotoWarn').style.display='flex';
+  document.getElementById('dmgModal').classList.add('show');
+}
+function closeDmgModal(){document.getElementById('dmgModal').classList.remove('show');pendingDmg=null;}
+document.getElementById('dmgCam').addEventListener('change',e=>{
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();r.onload=ev=>compress(ev.target.result,c=>{
+    pendingDmg.photo=c;
+    document.getElementById('dmgPhotoPreview').innerHTML=`<div class="photo-thumb"><img src="${c}"></div>`;
+    document.getElementById('dmgPhotoWarn').style.display='none';
+  });r.readAsDataURL(file);e.target.value="";
+});
+function saveDmg(){
+  if(!pendingDmg.type){toast("Elige el tipo de daño");return;}
+  if(!pendingDmg.photo){toast("Falta la foto del daño");return;}
+  pendingDmg.note=document.getElementById('dmgNote').value.trim();
+  draft.damages.push(pendingDmg);closeDmgModal();renderDamage();autosave();
+}
+
+/* ============================================================
+   PASO 4 — FIRMA
+   ============================================================ */
+function renderSign(){
+  // reset botones de email/continuar
+  const ec=document.getElementById('sigEmailCard');if(ec)ec.style.display='none';
+  const cb=document.getElementById('sigContinueBtn');if(cb)cb.style.display='none';
+  // resumen
+  const box=document.getElementById('dmgSummaryForSign');
+  if(draft.damages.length===0){
+    box.innerHTML='<div class="ok-box" style="margin:0;">El cliente declara que el vehículo se entrega <b>sin daños previos apreciables</b>.</div>';
+  }else{
+    box.innerHTML='<div class="section-title">Daños declarados ('+draft.damages.length+')</div>'+
+      draft.damages.map((d,i)=>{const zn=ZONES.find(z=>z.id===d.zone)?.name;const tn=DMG_TYPES.find(t=>t.id===d.type)?.name;
+        return `<div class="summary-line"><span class="k">${i+1}. ${zn}</span><span class="v">${tn}${d.note?' · '+d.note:''}</span></div>`;}).join('');
+  }
+  setupSigPad();
+  if(draft.signature){
+    const c=document.getElementById('sigPad');const ctx=c.getContext('2d');const img=new Image();
+    img.onload=()=>ctx.drawImage(img,0,0,c.width,c.height);img.src=draft.signature;
+    sig.has=true;showSigMeta(draft.signedAt);
+  }else{sig.has=false;document.getElementById('sigMeta').style.display='none';}
+}
+function setupSigPad(){
+  const c=document.getElementById('sigPad');
+  const ratio=window.devicePixelRatio||1;
+  c.width=c.offsetWidth*ratio;c.height=c.offsetHeight*ratio;
+  const ctx=c.getContext('2d');ctx.scale(ratio,ratio);
+  ctx.lineWidth=2.5;ctx.lineCap='round';ctx.strokeStyle='#0d1b2a';
+  let drawing=false;
+  function pos(e){const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;
+    return {x:t.clientX-r.left,y:t.clientY-r.top};}
+  function start(e){e.preventDefault();drawing=true;sig.has=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();}
+  function end(){drawing=false;}
+  c.onmousedown=start;c.onmousemove=move;c.onmouseup=end;c.onmouseleave=end;
+  c.ontouchstart=start;c.ontouchmove=move;c.ontouchend=end;
+}
+function clearSig(){const c=document.getElementById('sigPad');c.getContext('2d').clearRect(0,0,c.width,c.height);sig.has=false;
+  document.getElementById('sigMeta').style.display='none';draft.signature=null;draft.signedAt=null;}
+function showSigMeta(iso){
+  const d=new Date(iso);
+  document.getElementById('sigMetaTxt').textContent='Firmado el '+d.toLocaleDateString('es-ES')+' a las '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('sigMeta').style.display='flex';
+  document.getElementById('sigPad').classList.add('sig-done');
+}
+function confirmSign(){
+  if(!sig.has){toast("El cliente debe firmar para continuar");return;}
+  const c=document.getElementById('sigPad');
+  draft.signature=c.toDataURL('image/png');
+  draft.signedAt=new Date().toISOString();
+  showSigMeta(draft.signedAt);
+  autosave();
+  toast("Firma registrada ✓");
+  // si hay email del cliente, ofrecer enviar; si no, continuar directo
+  if(draft.email){
+    document.getElementById('sigEmailCard').style.display='block';
+    // botón para continuar al siguiente paso
+    let cont=document.getElementById('sigContinueBtn');
+    if(!cont){
+      cont=document.createElement('button');cont.id='sigContinueBtn';cont.className='btn btn-primary';
+      cont.style.marginTop='10px';cont.textContent='Continuar a comprobaciones ›';
+      cont.onclick=()=>toStep('type');
+      document.getElementById('sigEmailCard').after(cont);
+    }
+    cont.style.display='flex';
+    cont.scrollIntoView({behavior:'smooth',block:'center'});
+  }else{
+    setTimeout(()=>toStep('type'),400);
+  }
+}
+
+/* ============================================================
+   ENVIAR PDF POR EMAIL (Opción A, sin librerías, offline)
+   Abre la vista PDF para guardar y luego el correo ya relleno.
+   ============================================================ */
+function emailPDF(r){
+  if(!r){toast("No hay ficha");return;}
+  if(!r.email){toast("Este cliente no tiene email");return;}
+  // 1) abre la hoja en formato PDF (el usuario pulsa Guardar como PDF)
+  exportPDF(r.id);
+  // 2) abre el correo ya relleno para adjuntar el PDF guardado
+  const subject=encodeURIComponent('Hoja de Control de Calidad · '+(r.plate||''));
+  const body=encodeURIComponent(
+    'Estimado/a '+(r.client||'cliente')+':\n\n'+
+    'Adjuntamos la hoja de control de calidad del vehículo '+(r.plate||'')+' '+(r.model||'')+'.\n\n'+
+    'Por favor, adjunte el PDF que se acaba de guardar en el dispositivo.\n\n'+
+    'Un saludo,\nAuto Cristales Andalucía S.L.');
+  setTimeout(()=>{window.open('mailto:'+encodeURIComponent(r.email)+'?subject='+subject+'&body='+body,'_blank');},1200);
+  toast("Guarda el PDF y adjúntalo en el correo");
+}
+
+/* ============================================================
+   PASO 5 — TIPOS
+   ============================================================ */
+function renderTypes(){
+  const grid=document.getElementById('jobGrid');grid.innerHTML="";
+  Object.entries(JOB_TYPES).forEach(([key,t])=>{
+    const sel=draft.types.includes(key);
+    const el=document.createElement('button');el.className='jobcard'+(sel?' sel':'');
+    el.innerHTML=`<div class="check-badge">✓</div>${ICONS[key]}<div class="jt">${t.name}</div><div class="jd">${t.desc}</div>`;
+    el.onclick=()=>{const i=draft.types.indexOf(key);
+      if(i>=0){draft.types.splice(i,1);delete draft.checks[key];}else draft.types.push(key);renderTypes();};
+    grid.appendChild(el);});
+}
+
+/* ============================================================
+   PASO 6 — COMPROBACIONES
+   ============================================================ */
+function renderChecks(){
+  f('f-adhtime',draft.adhTime);f('f-adhtemp',draft.adhTemp);
+  const cont=document.getElementById('checkSections');cont.innerHTML="";
+  if(draft.types.length===0){cont.innerHTML='<div class="card" style="text-align:center;color:#8a98a4;">Vuelve atrás y elige al menos un tipo de cristal.</div>';return;}
+  draft.types.forEach(key=>{
+    const t=JOB_TYPES[key];if(!draft.checks[key])draft.checks[key]={};
+    const card=document.createElement('div');card.className='card';
+    card.innerHTML=`<div class="section-title">${t.name}</div>`;
+    t.checks.forEach((c,idx)=>{
+      const st=draft.checks[key][idx]||'na';
+      const row=document.createElement('div');row.className='checkitem';
+      row.innerHTML=`<div class="ci-label">${c.l}${c.sub?`<span class="ci-sub">${c.sub}</span>`:''}</div>`;
+      const tg=document.createElement('button');tg.className='toggle'+(st==='ok'?' on':'');
+      tg.onclick=()=>{draft.checks[key][idx]=(draft.checks[key][idx]==='ok')?'na':'ok';tg.classList.toggle('on');};
+      row.appendChild(tg);card.appendChild(row);});
+    cont.appendChild(card);});
+}
+
+/* ============================================================
+   PASO 7 — FINAL
+   ============================================================ */
+function renderFinal(){
+  f('f-notes',draft.notes);
+  const grid=document.getElementById('finalPhotoGrid');grid.innerHTML="";
+  draft.finalPhotos.forEach((p,i)=>{const d=document.createElement('div');d.className='photo-thumb';
+    d.innerHTML=`<img src="${p}"><button class="del" onclick="delFinal(${i})">✕</button>`;grid.appendChild(d);});
+  const add=document.createElement('button');add.className='add-photo';add.innerHTML=camIcon()+'Hacer foto';
+  add.onclick=()=>document.getElementById('finalCam').click();grid.appendChild(add);
+  document.querySelectorAll('[data-doc]').forEach(b=>{const k=b.getAttribute('data-doc');
+    b.classList.toggle('on',!!draft.docs[k]);b.onclick=()=>{draft.docs[k]=!draft.docs[k];b.classList.toggle('on');};});
+}
+function delFinal(i){draft.finalPhotos.splice(i,1);renderFinal();autosave();}
+document.getElementById('finalCam').addEventListener('change',e=>{handleFiles(e.target.files,draft.finalPhotos,()=>{renderFinal();autosave();});e.target.value="";});
+
+/* ============================================================
+   GUARDAR
+   ============================================================ */
+function finishRecord(){
+  saveDraftFromUI();
+  if(!draft.plate){toast("Falta la matrícula");toStep('data');return;}
+  draft.status="completada";
+  draft.completedAt=new Date().toISOString();
+  draft.updated=new Date().toISOString();
+  const all=loadAll();const idx=all.findIndex(r=>r.id===draft.id);
+  if(idx>=0)all[idx]=draft;else all.unshift(draft);
+  try{localStorage.setItem('aca_qc_v2',JSON.stringify(all));}catch(e){}
+  flashSync();
+  if(window.__fbReady&&window.__fbReady()&&window.pushRecord){window.pushRecord(draft);}
+  toast("Ficha completada ✓");draft=null;go('list');
+}
+
+/* ============================================================
+   LISTA
+   ============================================================ */
+// Muestra el historial de una matrícula: va a la lista filtrada por esa matrícula
+function showPlateHistory(plate){
+  // si hay un draft a medias, guardarlo antes de salir
+  if(draft){saveDraftFromUI();autosave();}
+  currentFilter='todas';
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.toggle('active',t.dataset.filter==='todas'));
+  go('list');
+  const sb=document.getElementById('searchBox');
+  if(sb){sb.value=(plate||'').toUpperCase();renderList();}
+  toast('Historial de '+(plate||'').toUpperCase());
+}
+
+function setFilter(fil){currentFilter=fil;
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.toggle('active',t.dataset.filter===fil));
+  renderList();}
+
+function renderList(){
+  const all=loadAll();const cont=document.getElementById('recordList');
+  // contador en curso
+  const enCurso=all.filter(r=>r.status==='curso').length;
+  const cc=document.getElementById('cntCurso');if(cc)cc.textContent=enCurso||'';
+  // limpiar buscador (mostrar X)
+  const sb=document.getElementById('searchBox');const q=sb?sb.value.trim().toUpperCase():'';
+  const sc=document.getElementById('searchClear');if(sc)sc.style.display=q?'block':'none';
+
+  if(all.length===0){cont.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg><p>Aún no hay fichas.<br>Pulsa <b>Nueva ficha</b> para empezar.</p></div>`;return;}
+
+  // filtrado
+  let list=all.slice();
+  if(currentFilter!=='todas')list=list.filter(r=>(r.status||'curso')===currentFilter);
+  if(q)list=list.filter(r=>(r.plate||'').toUpperCase().includes(q)||(r.model||'').toUpperCase().includes(q)||(r.ot||'').toUpperCase().includes(q));
+  // ordenar: en curso primero, luego por fecha de actualización desc
+  list.sort((a,b)=>{
+    const sa=(a.status==='curso')?0:1, sb2=(b.status==='curso')?0:1;
+    if(sa!==sb2)return sa-sb2;
+    return new Date(b.updated||b.created)-new Date(a.updated||a.created);
+  });
+
+  if(list.length===0){cont.innerHTML=`<div class="no-results">No hay fichas que coincidan${q?' con "'+q+'"':''}.</div>`;return;}
+
+  cont.innerHTML="";
+  // pre-cálculo: cuántas visitas tiene cada matrícula y posición cronológica
+  const byPlate={};
+  all.forEach(r=>{const p=(r.plate||'').toUpperCase().replace(/\s+/g,'');if(!p)return;(byPlate[p]=byPlate[p]||[]).push(r);});
+  Object.values(byPlate).forEach(arr=>arr.sort((a,b)=>new Date(a.created)-new Date(b.created)));
+  function visitInfo(r){
+    const p=(r.plate||'').toUpperCase().replace(/\s+/g,'');
+    const arr=byPlate[p]||[];if(arr.length<2)return null;
+    const pos=arr.findIndex(x=>x.id===r.id)+1;
+    return {pos,total:arr.length};
+  }
+
+  list.forEach(r=>{
+    const types=r.types.map(t=>JOB_TYPES[t]?.name).filter(Boolean).join(" · ");
+    const d=new Date(r.created);
+    const st=r.status||'curso';
+    const stLabel=st==='completada'?'Completada':'En curso';
+    const vi=visitInfo(r);
+    const visitTag=vi?`<span class="tag" style="background:#e7eef3;color:var(--steel);">Visita ${vi.pos}/${vi.total}</span>`:'';
+    const el=document.createElement('div');el.className='rec '+st;el.onclick=()=>showDetail(r.id);
+    el.innerHTML=`<div class="plate">${r.plate||'—'}</div>
+      <div class="rec-info"><div class="rt">${r.model||'Sin modelo'}</div>
+      <div class="rd">${types||'Sin tipo asignado'} · ${d.toLocaleDateString('es-ES')}</div>
+      <div><span class="status-tag ${st}">${stLabel}</span>${visitTag}${r.damages.length?`<span class="tag dmg">${r.damages.length} daños</span>`:''}${r.signature?'<span class="tag">firmado</span>':''}${r.finalPhotos.length?`<span class="tag">${r.finalPhotos.length} 📷</span>`:''}</div></div>
+      <div class="chev">›</div>`;
+    cont.appendChild(el);});
+}
+
+/* ============================================================
+   DETALLE
+   ============================================================ */
+function showDetail(id){
+  const r=loadAll().find(x=>x.id===id);if(!r)return;
+  const d=new Date(r.created);
+  let html=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+    <div class="plate" style="font-size:24px;">${r.plate}</div>
+    <div><div style="font-weight:700;font-size:18px;">${r.model||'—'}</div>
+    <div style="color:#7c8b97;font-size:14px;">${d.toLocaleDateString('es-ES')} · ${d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;
+
+  if((r.status||'curso')==='curso'){
+    html+=`<div class="alert-box" style="background:#fcf3e2;border-color:#e8d4a4;color:#946b00;">
+      <span>⏳ Ficha <b>en curso</b>. El coche aún está en el taller. Continúa cuando termine el trabajo.</span></div>
+      <button class="btn btn-primary" style="margin-bottom:14px;background:var(--amber);" onclick="resumeRecord(${r.id})">▶ Continuar esta ficha</button>`;
+  }
+
+  html+=`
+    <div class="card">
+      <div class="summary-line"><span class="k">Orden de trabajo</span><span class="v">${r.ot||'—'}</span></div>
+      <div class="summary-line"><span class="k">Cliente</span><span class="v">${r.client||'—'}</span></div>
+      <div class="summary-line"><span class="k">Operario</span><span class="v">${r.worker||'—'}</span></div>
+      <div class="summary-line"><span class="k">Adhesivo</span><span class="v">${r.adhTime||'—'} · ${r.adhTemp?r.adhTemp+'ºC':'—'}</span></div>
+    </div>`;
+
+  // peritaje
+  html+=`<div class="card"><div class="section-title">Estado de entrada</div>`;
+  if(r.signature){
+    const sd=new Date(r.signedAt);
+    html+=`<div class="ok-box" style="margin-bottom:12px;">✍ Firmado por el cliente el <b>${sd.toLocaleDateString('es-ES')}</b> a las <b>${sd.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</b></div>
+      <img src="${r.signature}" style="max-height:90px;border:1px solid var(--line);border-radius:8px;background:#fff;">`;
+  }else{html+=`<div style="color:#9aa7b1;">Sin firma registrada</div>`;}
+  if(r.damages.length){
+    html+=`<div style="margin-top:14px;"><b style="color:var(--warn);">${r.damages.length} daños previos:</b></div>`;
+    r.damages.forEach((dm,i)=>{const zn=ZONES.find(z=>z.id===dm.zone)?.name;const tn=DMG_TYPES.find(t=>t.id===dm.type)?.name;
+      html+=`<div class="dmg-list-item"><div class="dmg-num">${i+1}</div>${dm.photo?`<img class="dmg-thumb" src="${dm.photo}" data-full="${dm.photo}">`:''}<div class="dmg-meta"><div class="dt">${tn}${dm.note?' · '+dm.note:''}</div><div class="dz">${zn}</div></div></div>`;});
+  }else{html+=`<div style="margin-top:12px;color:var(--ok);font-weight:600;">Sin daños previos declarados</div>`;}
+  if(r.intakePhotos.length){
+    html+=`<div style="margin-top:14px;"><div class="section-title">Fotos de entrada (${r.intakePhotos.length})</div><div class="photo-grid">`+
+      r.intakePhotos.map(p=>`<div class="photo-thumb"><img src="${p}" data-full="${p}"></div>`).join('')+`</div></div>`;
+  }
+  html+=`</div>`;
+
+  // comprobaciones
+  r.types.forEach(key=>{const t=JOB_TYPES[key];if(!t)return;
+    html+=`<div class="card"><div class="section-title">${t.name}</div>`;
+    t.checks.forEach((c,idx)=>{const ok=(r.checks[key]&&r.checks[key][idx]==='ok');
+      html+=`<div class="summary-line"><span class="k">${c.l}</span><span class="v ${ok?'pill-ok':'pill-na'}">${ok?'✓ OK':'N/A'}</span></div>`;});
+    html+=`</div>`;});
+
+  if(r.finalPhotos.length){
+    html+=`<div class="card"><div class="section-title">Fotos del trabajo (${r.finalPhotos.length})</div><div class="photo-grid">`+
+      r.finalPhotos.map(p=>`<div class="photo-thumb"><img src="${p}" data-full="${p}"></div>`).join('')+`</div></div>`;}
+  if(r.notes)html+=`<div class="card"><div class="section-title">Observaciones</div><div>${r.notes.replace(/</g,'&lt;')}</div></div>`;
+  const docs=[];if(r.docs.ot)docs.push('OT sellada');if(r.docs.fra)docs.push('Factura');if(r.docs.gar)docs.push('Garantía');
+  html+=`<div class="card"><div class="section-title">Entrega</div><div>${docs.length?docs.map(x=>`<span class="tag">${x}</span>`).join(''):'<span style="color:#9aa7b1">Nada marcado</span>'}</div></div>`;
+
+  // otras visitas de la misma matrícula
+  const prev=historyForPlate(r.plate,r.id);
+  if(prev.length){
+    html+=`<div class="card"><div class="section-title">Otras visitas de ${r.plate} (${prev.length})</div>`;
+    prev.forEach(pv=>{
+      const pd=new Date(pv.created);
+      const ptypes=pv.types.map(t=>JOB_TYPES[t]?.name).filter(Boolean).join(', ')||'Sin tipo';
+      const pst=(pv.status||'curso')==='completada'?'Completada':'En curso';
+      html+=`<div class="dmg-list-item" style="cursor:pointer;" onclick="showDetail(${pv.id})">
+        <div class="dmg-meta"><div class="dt">${pd.toLocaleDateString('es-ES')} · ${ptypes}</div>
+        <div class="dz">${pst}${pv.damages.length?' · '+pv.damages.length+' daños':''}</div></div>
+        <div class="chev" style="color:var(--glass);font-size:20px;">›</div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`<div class="btn-row"><button class="btn btn-steel" onclick="exportPDF(${r.id})">📄 Exportar PDF</button><button class="btn btn-ghost" onclick="editRecord(${r.id})">✎ Editar</button></div>`;
+  html+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="showPlateHistory('${(r.plate||'').toUpperCase()}')">🔎 Ver historial de ${r.plate}</button>`;
+  if(r.email){html+=`<button class="btn btn-steel" style="margin-top:10px;background:#2e8bc0;" onclick='emailPDF(loadAll().find(x=>x.id===${r.id}))'>✉ Enviar PDF a ${r.email}</button>`;}
+  html+=`<button class="btn btn-ghost" style="margin-top:10px;color:var(--warn);border-color:#f0c9b8;" onclick="deleteRecord(${r.id})">Eliminar ficha</button>`;
+  document.getElementById('detailBody').innerHTML=html;
+  document.querySelectorAll('#detailBody img[data-full]').forEach(im=>{im.onclick=()=>{const w=window.open();w.document.write('<img src="'+im.dataset.full+'" style="width:100%">');};});
+  go('detail');
+}
+function editRecord(id){
+  draft=loadAll().find(x=>x.id===id);
+  if(!draft)return;
+  sig={has:!!draft.signature};
+  fillDataUI();
+  const step=draft.lastStep||'data';
+  paintSteps(step);
+  toStep(step);
+}
+// Reanudar una ficha en curso desde donde se quedó
+function resumeRecord(id){editRecord(id);}
+function deleteRecord(id){if(!confirm("¿Eliminar esta ficha? No se puede deshacer."))return;writeCacheDelete(id);if(window.removeRecordCloud)window.removeRecordCloud(id);toast("Ficha eliminada");go('list');}
+function writeCacheDelete(id){const all=loadAll().filter(r=>r.id!==id);try{localStorage.setItem('aca_qc_v2',JSON.stringify(all));}catch(e){}flashSync();}
+
+/* ============================================================
+   PDF
+   ============================================================ */
+function exportPDF(id){
+  const r=loadAll().find(x=>x.id===id);if(!r)return;const d=new Date(r.created);
+  let checksHTML="";
+  r.types.forEach(key=>{const t=JOB_TYPES[key];if(!t)return;checksHTML+=`<h3>${t.name}</h3><table>`;
+    t.checks.forEach((c,idx)=>{const ok=(r.checks[key]&&r.checks[key][idx]==='ok');
+      checksHTML+=`<tr><td>${c.l}</td><td class="c">${ok?'☑ Verificado':'—'}</td></tr>`;});checksHTML+=`</table>`;});
+  let dmgHTML="";
+  if(r.damages.length){dmgHTML='<h3>Daños previos declarados</h3><div class="photos">';
+    r.damages.forEach((dm,i)=>{const zn=ZONES.find(z=>z.id===dm.zone)?.name;const tn=DMG_TYPES.find(t=>t.id===dm.type)?.name;
+      dmgHTML+=`<div class="dmgcard"><div class="dn">${i+1}. ${tn} · ${zn}</div>${dm.note?`<div class="dno">${dm.note}</div>`:''}${dm.photo?`<img src="${dm.photo}">`:''}</div>`;});
+    dmgHTML+='</div>';
+  }else{dmgHTML='<h3>Daños previos declarados</h3><p style="color:#1a8754;font-weight:bold;">Vehículo entregado sin daños previos apreciables.</p>';}
+  let intakeHTML=r.intakePhotos.length?'<h3>Fotos de entrada</h3><div class="photos">'+r.intakePhotos.map(p=>`<img src="${p}">`).join('')+'</div>':'';
+  let finalHTML=r.finalPhotos.length?'<h3>Fotos del trabajo terminado</h3><div class="photos">'+r.finalPhotos.map(p=>`<img src="${p}">`).join('')+'</div>':'';
+  let sigHTML="";
+  if(r.signature){const sd=new Date(r.signedAt);
+    sigHTML=`<div class="sigbox"><img src="${r.signature}"><div class="sigcap">Firma del cliente${r.client?' · '+r.client:''}<br>Registrado: ${sd.toLocaleDateString('es-ES')} ${sd.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</div></div>`;}
+  const docs=[];if(r.docs.ot)docs.push('OT sellada');if(r.docs.fra)docs.push('Factura');if(r.docs.gar)docs.push('Certificado de garantía');
+
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>QC ${r.plate}</title><style>
+    body{font-family:Arial,sans-serif;color:#0d1b2a;padding:28px;font-size:13px;}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1b3a5b;padding-bottom:12px;margin-bottom:18px;}
+    .head h1{margin:0;font-size:20px;color:#1b3a5b;}.head .co{font-size:12px;color:#555;}
+    .plate{font-family:'Courier New',monospace;font-weight:bold;font-size:22px;background:#0d1b2a;color:#fff;padding:6px 12px;border-radius:5px;}
+    .meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;margin-bottom:16px;}
+    .meta div{padding:5px 0;border-bottom:1px solid #ddd;}.meta b{color:#1b3a5b;}
+    h3{color:#2e8bc0;font-size:14px;margin:18px 0 6px;border-bottom:1px solid #d6ecf5;padding-bottom:3px;}
+    table{width:100%;border-collapse:collapse;}td{padding:6px 4px;border-bottom:1px solid #eee;}
+    td.c{text-align:right;font-weight:bold;width:130px;color:#1a8754;}
+    .photos{display:flex;flex-wrap:wrap;gap:8px;}.photos img{width:31%;border:1px solid #ccc;border-radius:4px;}
+    .dmgcard{width:31%;border:1px solid #e8b9a4;border-radius:6px;padding:6px;background:#fbe9e1;}
+    .dmgcard .dn{font-weight:bold;color:#c1440e;font-size:12px;}.dmgcard .dno{font-size:11px;color:#555;margin:3px 0;}
+    .dmgcard img{width:100%;border-radius:4px;margin-top:4px;}
+    .sigbox{margin-top:14px;border:1px solid #b5dec6;background:#e3f4ea;border-radius:8px;padding:12px;display:inline-block;}
+    .sigbox img{height:80px;display:block;}.sigcap{font-size:11px;color:#1b3a5b;margin-top:6px;}
+    .foot{margin-top:24px;border-top:1px solid #ccc;padding-top:10px;font-size:11px;color:#777;display:flex;justify-content:space-between;}
+    @media print{.noprint{display:none;}.dmgcard,.photos img{page-break-inside:avoid;}}
+  </style></head><body>
+    <div class="head"><div><h1>Hoja de Control de Calidad</h1><div class="co">Auto Cristales Andalucía S.L. · Granada</div></div><div class="plate">${r.plate}</div></div>
+    <div class="meta">
+      <div><b>Vehículo:</b> ${r.model||'—'}</div><div><b>Orden de trabajo:</b> ${r.ot||'—'}</div>
+      <div><b>Cliente:</b> ${r.client||'—'}${r.email?' · '+r.email:''}</div><div><b>Operario:</b> ${r.worker||'—'}</div>
+      <div><b>Fecha:</b> ${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div><b>Adhesivo:</b> ${r.adhTime||'—'} · ${r.adhTemp?r.adhTemp+' ºC':'—'}</div>
+    </div>
+    <div style="background:#f5f7f9;border-left:4px solid #1b3a5b;padding:10px 14px;margin-bottom:14px;font-size:12px;">
+      <b>Peritaje de entrada:</b> el cliente confirma con su firma el estado del vehículo y los daños existentes en el momento de la entrega, antes de la intervención.</div>
+    ${dmgHTML}
+    ${sigHTML}
+    ${intakeHTML}
+    ${checksHTML}
+    <h3>Documentación entregada</h3><p>${docs.length?docs.join(' · '):'—'}</p>
+    ${r.notes?`<h3>Observaciones</h3><p>${r.notes.replace(/</g,'&lt;')}</p>`:''}
+    ${finalHTML}
+    <div class="foot"><span>Documento generado por la app de Control de Calidad · Auto Cristales Andalucía</span><span>${new Date().toLocaleString('es-ES')}</span></div>
+    <div class="noprint" style="margin-top:20px;text-align:center;"><button onclick="window.print()" style="padding:12px 24px;font-size:15px;background:#2e8bc0;color:#fff;border:none;border-radius:8px;">Imprimir / Guardar PDF</button></div>
+  </body></html>`);
+  win.document.close();setTimeout(()=>win.print(),600);
+}
+
+/* ============================================================
+   TOAST + INICIO
+   ============================================================ */
+let toastT;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+if(typeof flashSync==='function')flashSync();
+renderList();
+</script>
+</body>
+</html>
