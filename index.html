@@ -1157,7 +1157,8 @@ async function autoSendEmail(){
   const btn=document.getElementById('sigEmailBtn');
   _sending=true; if(btn){btn.textContent='Generando y enviando…';btn.disabled=true;}
   try{
-    const pdf=await generatePdfDataUrl(draft);
+    const norm=await recordWithDataUrls(draft);
+    const pdf=await generatePdfDataUrl(norm);
     await window.__queueClientEmail(draft, pdf);
     draft.emailSent=true; draft.emailSentAt=new Date().toISOString(); autosave();
     if(btn){btn.textContent='✓ Enviado al cliente';btn.style.background='#1a8754';}
