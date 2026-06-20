@@ -316,9 +316,9 @@
     </div>
 
     <div class="card" id="sigEmailCard" style="display:none;">
-      <div class="section-title">Enviar al cliente</div>
-      <p style="color:#7c8b97;font-size:14px;margin:0 0 12px;">Se descarga el PDF y se abre el correo. Adjunta el archivo recién descargado y pulsa enviar.</p>
-      <button class="btn btn-steel" onclick="emailPDF(draft)">✉ Enviar PDF al cliente</button>
+      <div class="section-title">Correo al cliente</div>
+      <p style="color:#7c8b97;font-size:14px;margin:0 0 12px;" id="sigEmailMsg">Se enviará automáticamente la hoja en PDF al correo del cliente.</p>
+      <button class="btn btn-steel" id="sigEmailBtn" onclick="autoSendEmail()">✉ Enviar hoja al cliente ahora</button>
     </div>
 
     <button class="btn btn-primary" onclick="confirmSign()">Confirmar firma y continuar ›</button>
@@ -417,7 +417,7 @@
    FIREBASE — sincronización nube + caché local (offline)
    ============================================================ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot, enableIndexedDbPersistence }
+import { getFirestore, doc, setDoc, deleteDoc, addDoc, collection, onSnapshot, enableIndexedDbPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref as sRef, uploadString, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -482,6 +482,35 @@ async function uploadOne(dataUrl, path){
   await uploadString(r, dataUrl, 'data_url');
   return await getDownloadURL(r);
 }
+
+/* ---- enviar PDF al cliente por email (cola Trigger Email) ---- */
+async function queueClientEmail(rec, pdfDataUrl){
+  if(!fbReady) throw new Error("sin-conexion");
+  // 1) subir el PDF a Storage
+  const path="fichas/"+rec.id+"/hoja_"+Date.now()+".pdf";
+  const pdfUrl=await uploadOne(pdfDataUrl, path);
+  // 2) crear documento en la colección 'mail' que vigila la extensión
+  const html=
+    "<div style='font-family:Arial,sans-serif;color:#0d1b2a;'>"+
+    "<p>Estimado/a "+(rec.client||"cliente")+":</p>"+
+    "<p>Adjuntamos la hoja de control de calidad del vehículo <b>"+(rec.plate||"")+"</b> "+(rec.model||"")+", "+
+    "con el estado de entrada y su conformidad firmada.</p>"+
+    "<p>Gracias por confiar en nosotros.</p>"+
+    "<p style='color:#1b3a5b;'><b>Auto Cristales Andalucía S.L.</b><br>Granada</p>"+
+    "</div>";
+  await addDoc(collection(db,"mail"),{
+    to: rec.email,
+    message:{
+      subject: "Hoja de Control de Calidad · "+(rec.plate||""),
+      html: html,
+      attachments:[{ filename: "Hoja_Calidad_"+(rec.plate||"vehiculo")+".pdf", path: pdfUrl }]
+    },
+    _meta:{ fichaId: rec.id, plate: rec.plate, created: new Date().toISOString() }
+  });
+  return true;
+}
+window.__queueClientEmail=queueClientEmail;
+
 async function uploadPhotos(recIn){
   const rec=JSON.parse(JSON.stringify(recIn)); // copia
   const base="fichas/"+rec.id+"/";
@@ -988,20 +1017,171 @@ function confirmSign(){
 }
 
 /* ============================================================
-   ENVIAR PDF POR EMAIL (Opción A, sin librerías, offline)
-   Abre la vista PDF para guardar y luego el correo ya relleno.
+   ENVÍO AUTOMÁTICO DE LA HOJA AL CLIENTE (PDF adjunto vía Brevo)
+   ============================================================ */
+let _jspdfLoading=null;
+function ensureJsPDF(){
+  if(window.jspdf&&window.jspdf.jsPDF) return Promise.resolve();
+  if(_jspdfLoading) return _jspdfLoading;
+  _jspdfLoading=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    s.onload=()=>res(); s.onerror=()=>rej(new Error("no-jspdf"));
+    document.head.appendChild(s);
+  });
+  return _jspdfLoading;
+}
+// añade una imagen (dataURL) a jsPDF respetando ancho máximo
+function addImg(pdf,dataUrl,x,y,maxW,maxH){
+  try{
+    const props=pdf.getImageProperties(dataUrl);
+    let w=maxW, h=w*props.height/props.width;
+    if(h>maxH){h=maxH;w=h*props.width/props.height;}
+    const fmt=(dataUrl.indexOf('image/png')>=0)?'PNG':'JPEG';
+    pdf.addImage(dataUrl,fmt,x,y,w,h);
+    return h;
+  }catch(e){return 0;}
+}
+async function generatePdfDataUrl(r){
+  await ensureJsPDF();
+  const { jsPDF }=window.jspdf;
+  const pdf=new jsPDF({unit:'mm',format:'a4'});
+  const W=210, M=14; let y=18;
+  // cabecera
+  pdf.setFontSize(17);pdf.setTextColor(27,58,91);pdf.setFont(undefined,'bold');
+  pdf.text("Hoja de Control de Calidad",M,y);
+  pdf.setFontSize(16);pdf.setTextColor(13,27,42);
+  pdf.text((r.plate||""),W-M,y,{align:'right'});
+  y+=6; pdf.setFontSize(10);pdf.setTextColor(90,90,90);pdf.setFont(undefined,'normal');
+  pdf.text("Auto Cristales Andalucía S.L. · Granada",M,y);
+  y+=4; pdf.setDrawColor(27,58,91);pdf.setLineWidth(0.6);pdf.line(M,y,W-M,y); y+=8;
+  // datos
+  const d=new Date(r.created);
+  pdf.setFontSize(10);pdf.setTextColor(13,27,42);
+  const rows=[
+    ["Vehículo: "+(r.model||"—"), "Orden de trabajo: "+(r.ot||"—")],
+    ["Cliente: "+(r.client||"—"), "Operario: "+(r.worker||"—")],
+    ["Fecha: "+d.toLocaleDateString('es-ES')+" "+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), "Email: "+(r.email||"—")]
+  ];
+  rows.forEach(rw=>{ pdf.text(rw[0],M,y); pdf.text(rw[1],W/2,y); y+=6; });
+  y+=2;
+  // peritaje
+  pdf.setFont(undefined,'bold');pdf.setTextColor(46,139,192);pdf.text("Peritaje de entrada",M,y);y+=5;
+  pdf.setFont(undefined,'normal');pdf.setTextColor(60,60,60);pdf.setFontSize(9);
+  const intro="El cliente confirma con su firma el estado del vehículo y los daños existentes en el momento de la entrega, antes de la intervención.";
+  pdf.text(pdf.splitTextToSize(intro,W-2*M),M,y); y+=10;
+  // daños
+  pdf.setFontSize(11);pdf.setTextColor(13,27,42);pdf.setFont(undefined,'bold');
+  if(r.damages&&r.damages.length){
+    pdf.text("Daños previos declarados: "+r.damages.length,M,y);y+=6;
+    pdf.setFont(undefined,'normal');pdf.setFontSize(9);
+    for(let i=0;i<r.damages.length;i++){
+      const dm=r.damages[i];
+      const zn=(ZONES.find(z=>z.id===dm.zone)||{}).name||"";
+      const tn=(DMG_TYPES.find(t=>t.id===dm.type)||{}).name||"";
+      if(y>250){pdf.addPage();y=18;}
+      pdf.setTextColor(193,68,14);pdf.text((i+1)+". "+tn+" · "+zn+(dm.note?" · "+dm.note:""),M,y);y+=4;
+      if(dm.photo&&dm.photo.startsWith('data:')){ const h=addImg(pdf,dm.photo,M,y,45,34); y+=h+4; }
+      pdf.setTextColor(13,27,42);
+    }
+  }else{
+    pdf.setTextColor(26,135,84);pdf.text("Vehículo entregado sin daños previos apreciables.",M,y);y+=8;
+    pdf.setTextColor(13,27,42);
+  }
+  // firma
+  if(y>235){pdf.addPage();y=18;}
+  y+=2; pdf.setFont(undefined,'bold');pdf.setFontSize(11);pdf.setTextColor(46,139,192);
+  pdf.text("Conformidad del cliente",M,y);y+=5;
+  if(r.signature&&r.signature.startsWith('data:')){ const h=addImg(pdf,r.signature,M,y,55,28); y+=h+3; }
+  pdf.setFont(undefined,'normal');pdf.setFontSize(9);pdf.setTextColor(60,60,60);
+  if(r.signedAt){ const sd=new Date(r.signedAt);
+    pdf.text("Firmado por "+(r.client||"cliente")+" · "+sd.toLocaleDateString('es-ES')+" "+sd.toLocaleTimeString('es-ES'),M,y); y+=6; }
+  // fotos de entrada
+  if(r.intakePhotos&&r.intakePhotos.length){
+    if(y>235){pdf.addPage();y=18;}
+    pdf.setFont(undefined,'bold');pdf.setFontSize(11);pdf.setTextColor(46,139,192);
+    pdf.text("Fotos de entrada",M,y);y+=5;
+    let x=M;
+    for(const p of r.intakePhotos){
+      if(!p.startsWith('data:'))continue;
+      if(x+60>W-M){x=M;y+=46;}
+      if(y>250){pdf.addPage();y=18;x=M;}
+      addImg(pdf,p,x,y,56,42); x+=60;
+    }
+  }
+  // pie
+  pdf.setFontSize(8);pdf.setTextColor(130,130,130);
+  pdf.text("Documento generado por la app de Control de Calidad · Auto Cristales Andalucía",M,290);
+  return pdf.output('datauristring');
+}
+
+// convierte una imagen (URL http o dataURL) en dataURL para meterla en el PDF
+function imgToDataUrl(src){
+  return new Promise((res)=>{
+    if(!src){res(null);return;}
+    if(src.startsWith('data:')){res(src);return;}
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>{ try{
+      const cv=document.createElement('canvas');cv.width=img.naturalWidth;cv.height=img.naturalHeight;
+      cv.getContext('2d').drawImage(img,0,0);res(cv.toDataURL('image/jpeg',0.7));
+    }catch(e){res(null);} };
+    img.onerror=()=>res(null); img.src=src;
+  });
+}
+// prepara una copia de la ficha con todas las imágenes como dataURL
+async function recordWithDataUrls(rec){
+  const r=JSON.parse(JSON.stringify(rec));
+  r.signature=await imgToDataUrl(r.signature);
+  if(Array.isArray(r.intakePhotos)){ for(let i=0;i<r.intakePhotos.length;i++) r.intakePhotos[i]=await imgToDataUrl(r.intakePhotos[i]); r.intakePhotos=r.intakePhotos.filter(Boolean); }
+  if(Array.isArray(r.damages)){ for(const d of r.damages){ if(d) d.photo=await imgToDataUrl(d.photo); } }
+  return r;
+}
+async function sendEmailFromDetail(id){
+  const rec=loadAll().find(x=>x.id===id); if(!rec)return;
+  if(!rec.email){toast("Este cliente no tiene email");return;}
+  if(!window.__fbReady||!window.__fbReady()){toast("Sin conexión");return;}
+  toast("Generando y enviando…");
+  try{
+    const norm=await recordWithDataUrls(rec);
+    const pdf=await generatePdfDataUrl(norm);
+    await window.__queueClientEmail(rec, pdf);
+    toast("Hoja enviada a "+rec.email+" ✓");
+  }catch(e){ console.warn(e); toast("No se pudo enviar. Reintenta."); }
+}
+
+let _sending=false;
+async function autoSendEmail(){
+  if(_sending)return;
+  if(!draft||!draft.email){toast("Este cliente no tiene email");return;}
+  if(!window.__fbReady||!window.__fbReady()){toast("Sin conexión: se enviará al recuperar WiFi");return;}
+  const btn=document.getElementById('sigEmailBtn');
+  _sending=true; if(btn){btn.textContent='Generando y enviando…';btn.disabled=true;}
+  try{
+    const pdf=await generatePdfDataUrl(draft);
+    await window.__queueClientEmail(draft, pdf);
+    draft.emailSent=true; draft.emailSentAt=new Date().toISOString(); autosave();
+    if(btn){btn.textContent='✓ Enviado al cliente';btn.style.background='#1a8754';}
+    const msg=document.getElementById('sigEmailMsg'); if(msg)msg.textContent='Hoja enviada a '+draft.email+'.';
+    toast("Hoja enviada al cliente ✓");
+  }catch(e){
+    console.warn(e);
+    if(btn){btn.textContent='✉ Reintentar envío';btn.disabled=false;}
+    toast("No se pudo enviar. Reintenta.");
+  }
+  _sending=false;
+}
+
+/* ============================================================
+   ENVIAR PDF POR EMAIL (manual, fallback sin conexión)
    ============================================================ */
 function emailPDF(r){
   if(!r){toast("No hay ficha");return;}
   if(!r.email){toast("Este cliente no tiene email");return;}
-  // 1) abre la hoja en formato PDF (el usuario pulsa Guardar como PDF)
   exportPDF(r.id);
-  // 2) abre el correo ya relleno para adjuntar el PDF guardado
   const subject=encodeURIComponent('Hoja de Control de Calidad · '+(r.plate||''));
   const body=encodeURIComponent(
     'Estimado/a '+(r.client||'cliente')+':\n\n'+
     'Adjuntamos la hoja de control de calidad del vehículo '+(r.plate||'')+' '+(r.model||'')+'.\n\n'+
-    'Por favor, adjunte el PDF que se acaba de guardar en el dispositivo.\n\n'+
     'Un saludo,\nAuto Cristales Andalucía S.L.');
   setTimeout(()=>{window.open('mailto:'+encodeURIComponent(r.email)+'?subject='+subject+'&body='+body,'_blank');},1200);
   toast("Guarda el PDF y adjúntalo en el correo");
@@ -1221,7 +1401,7 @@ function showDetail(id){
 
   html+=`<div class="btn-row"><button class="btn btn-steel" onclick="exportPDF(${r.id})">📄 Exportar PDF</button><button class="btn btn-ghost" onclick="editRecord(${r.id})">✎ Editar</button></div>`;
   html+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="showPlateHistory('${(r.plate||'').toUpperCase()}')">🔎 Ver historial de ${r.plate}</button>`;
-  if(r.email){html+=`<button class="btn btn-steel" style="margin-top:10px;background:#2e8bc0;" onclick='emailPDF(loadAll().find(x=>x.id===${r.id}))'>✉ Enviar PDF a ${r.email}</button>`;}
+  if(r.email){html+=`<button class="btn btn-steel" style="margin-top:10px;background:#2e8bc0;" onclick='sendEmailFromDetail(${r.id})'>✉ Enviar hoja a ${r.email}</button>`;}
   html+=`<button class="btn btn-ghost" style="margin-top:10px;color:var(--warn);border-color:#f0c9b8;" onclick="deleteRecord(${r.id})">Eliminar ficha</button>`;
   document.getElementById('detailBody').innerHTML=html;
   document.querySelectorAll('#detailBody img[data-full]').forEach(im=>{im.onclick=()=>{const w=window.open();w.document.write('<img src="'+im.dataset.full+'" style="width:100%">');};});
