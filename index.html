@@ -166,9 +166,37 @@
   .status-tag.curso{background:#fcf3e2;color:var(--amber);}
   .status-tag.completada{background:var(--ok-bg);color:var(--ok);}
   .no-results{text-align:center;padding:40px 20px;color:#8a98a4;}
+
+  #loginScreen{position:fixed;inset:0;z-index:300;background:linear-gradient(160deg,#1b3a5b,#0d1b2a);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{background:#fff;border-radius:18px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  .login-logo{width:60px;height:60px;border-radius:14px;background:linear-gradient(135deg,var(--glass),#5fb3d9);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+  .login-logo svg{width:36px;height:36px;}
+  .login-card h1{text-align:center;font-size:22px;margin:0 0 2px;color:var(--ink);}
+  .login-sub{text-align:center;color:#7c8b97;font-size:14px;margin:0 0 22px;}
+  .login-error{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:11px 14px;font-size:14px;margin-bottom:12px;font-weight:600;}
+  .login-note{text-align:center;color:#9aa7b1;font-size:12px;margin:14px 0 0;}
 </style>
 </head>
 <body>
+
+<!-- ===== PANTALLA DE ACCESO ===== -->
+<div id="loginScreen" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l1.5-4.5A2 2 0 016.4 3h11.2a2 2 0 011.9 1.5L21 9"/>
+        <path d="M3 9h18v7a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1H6v1a1 1 0 01-1 1H4a1 1 0 01-1-1z"/>
+      </svg>
+    </div>
+    <h1>Control de Calidad</h1>
+    <p class="login-sub">Auto Cristales Andalucía</p>
+    <label class="field"><span>Usuario</span><input type="email" id="loginEmail" placeholder="correo" autocomplete="username" style="text-transform:none;"></label>
+    <label class="field"><span>Contraseña</span><input type="password" id="loginPass" placeholder="contraseña" autocomplete="current-password"></label>
+    <div id="loginError" class="login-error" style="display:none;"></div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLoginUI()">Entrar</button>
+    <p class="login-note">Solo hay que iniciar sesión una vez en cada tablet.</p>
+  </div>
+</div>
 
 <header>
   <div class="logo">
@@ -206,6 +234,9 @@
     </div>
 
     <div id="recordList"></div>
+    <div style="text-align:center;margin-top:24px;">
+      <button onclick="if(confirm('¿Cerrar sesión en esta tablet? Habrá que volver a introducir la contraseña.'))window.__doLogout();" style="background:none;border:none;color:#9aa7b1;font-size:13px;text-decoration:underline;padding:8px;">Cerrar sesión</button>
+    </div>
   </section>
 
   <!-- ====== PASO 1: DATOS ====== -->
@@ -390,6 +421,8 @@ import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot, enableInd
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref as sRef, uploadString, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAn5iS7oF7SoUAFYCgM4vSeXyhr7hy_UJQ",
@@ -400,14 +433,17 @@ const firebaseConfig = {
   appId: "1:320939188296:web:689275b66f519fc6e9787d"
 };
 
-let fbApp=null, db=null, storage=null, fbReady=false;
+let fbApp=null, db=null, storage=null, auth=null, fbReady=false;
 try{
   fbApp=initializeApp(firebaseConfig);
   db=getFirestore(fbApp);
   storage=getStorage(fbApp);
+  auth=getAuth(fbApp);
   fbReady=true;
   // persistencia offline de Firestore (cola de escritura sin conexión)
   enableIndexedDbPersistence(db).catch(()=>{});
+  // la sesión de usuario se guarda en la tablet (no vuelve a pedir login)
+  setPersistence(auth, browserLocalPersistence).catch(()=>{});
 }catch(e){ console.warn("Firebase no disponible, modo local:",e); fbReady=false; }
 
 const COL="fichas";              // colección en Firestore
@@ -521,9 +557,34 @@ window.pushRecord=pushRecord;
 window.removeRecordCloud=removeRecordCloud;
 window.__fbReady=()=>fbReady;
 
-// arrancar
-startCloudListener();
-window.addEventListener('load',()=>{ flashSync(); if(window.renderList)renderList(); });
+/* ---- control de sesión (login una vez por tablet) ---- */
+let listenerStarted=false;
+window.__doLogin=async function(email,pass){
+  if(!fbReady) throw new Error("sin-conexion");
+  await signInWithEmailAndPassword(auth, email, pass);
+};
+window.__doLogout=async function(){
+  if(fbReady){ try{ await signOut(auth); }catch(e){} }
+  location.reload();
+};
+
+function showLogin(){ const s=document.getElementById('loginScreen'); if(s)s.style.display='flex'; }
+function hideLogin(){ const s=document.getElementById('loginScreen'); if(s)s.style.display='none'; }
+
+if(fbReady){
+  onAuthStateChanged(auth, user=>{
+    if(user){
+      hideLogin();
+      if(!listenerStarted){ startCloudListener(); listenerStarted=true; }
+      flashSync(); if(window.renderList)renderList();
+    }else{
+      showLogin();
+    }
+  });
+}else{
+  // sin Firebase (p. ej. abriendo el archivo suelto): modo local, sin login
+  window.addEventListener('load',()=>{ flashSync(); if(window.renderList)renderList(); });
+}
 </script>
 
 <script>
@@ -1249,6 +1310,34 @@ function exportPDF(id){
    ============================================================ */
 let toastT;
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* ===== LOGIN ===== */
+function doLoginUI(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const errBox=document.getElementById('loginError');
+  const btn=document.getElementById('loginBtn');
+  errBox.style.display='none';
+  if(!email||!pass){errBox.textContent='Escribe usuario y contraseña.';errBox.style.display='block';return;}
+  btn.textContent='Entrando…';btn.disabled=true;
+  window.__doLogin(email,pass).then(()=>{
+    // onAuthStateChanged se encarga de ocultar el login y cargar
+    btn.textContent='Entrar';btn.disabled=false;
+  }).catch(e=>{
+    let msg='No se ha podido entrar.';
+    const c=(e&&e.code)||'';
+    if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found'))msg='Usuario o contraseña incorrectos.';
+    else if(c.includes('network'))msg='Sin conexión. Comprueba el WiFi.';
+    else if(c.includes('too-many-requests'))msg='Demasiados intentos. Espera un momento.';
+    errBox.textContent=msg;errBox.style.display='block';
+    btn.textContent='Entrar';btn.disabled=false;
+  });
+}
+// Enter para entrar
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('loginScreen')&&document.getElementById('loginScreen').style.display!=='none'){doLoginUI();}
+});
+
 if(typeof flashSync==='function')flashSync();
 renderList();
 </script>
