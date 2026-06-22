@@ -948,6 +948,7 @@ function saveDmg(){
    PASO 4 — FIRMA
    ============================================================ */
 function renderSign(){
+  sig.fresh=false;
   // reset botones de email/continuar
   const ec=document.getElementById('sigEmailCard');if(ec)ec.style.display='none';
   const cb=document.getElementById('sigContinueBtn');if(cb)cb.style.display='none';
@@ -965,7 +966,23 @@ function renderSign(){
     const c=document.getElementById('sigPad');const ctx=c.getContext('2d');const img=new Image();
     img.onload=()=>ctx.drawImage(img,0,0,c.width,c.height);img.src=draft.signature;
     sig.has=true;showSigMeta(draft.signedAt);
+    // ya estaba firmada (ficha reabierta): mostrar directamente cómo continuar
+    showSignContinue();
   }else{sig.has=false;document.getElementById('sigMeta').style.display='none';}
+}
+// Muestra la tarjeta de email (si hay) y el botón de continuar
+function showSignContinue(){
+  if(draft.email){
+    const card=document.getElementById('sigEmailCard'); if(card)card.style.display='block';
+    let cont=document.getElementById('sigContinueBtn');
+    if(!cont){
+      cont=document.createElement('button');cont.id='sigContinueBtn';cont.className='btn btn-primary';
+      cont.style.marginTop='10px';cont.textContent='Continuar a comprobaciones ›';
+      cont.onclick=()=>toStep('type');
+      const c=document.getElementById('sigEmailCard'); if(c)c.after(cont);
+    }
+    cont.style.display='flex';
+  }
 }
 function setupSigPad(){
   const c=document.getElementById('sigPad');
@@ -976,14 +993,17 @@ function setupSigPad(){
   let drawing=false;
   function pos(e){const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;
     return {x:t.clientX-r.left,y:t.clientY-r.top};}
-  function start(e){e.preventDefault();drawing=true;sig.has=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function start(e){e.preventDefault();drawing=true;sig.has=true;sig.fresh=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
   function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();}
   function end(){drawing=false;}
   c.onmousedown=start;c.onmousemove=move;c.onmouseup=end;c.onmouseleave=end;
   c.ontouchstart=start;c.ontouchmove=move;c.ontouchend=end;
 }
-function clearSig(){const c=document.getElementById('sigPad');c.getContext('2d').clearRect(0,0,c.width,c.height);sig.has=false;
-  document.getElementById('sigMeta').style.display='none';draft.signature=null;draft.signedAt=null;}
+function clearSig(){const c=document.getElementById('sigPad');c.getContext('2d').clearRect(0,0,c.width,c.height);sig.has=false;sig.fresh=false;
+  document.getElementById('sigMeta').style.display='none';draft.signature=null;draft.signedAt=null;
+  // ocultar opciones de continuar hasta que vuelva a firmar
+  const cont=document.getElementById('sigContinueBtn');if(cont)cont.style.display='none';
+  const card=document.getElementById('sigEmailCard');if(card)card.style.display='none';}
 function showSigMeta(iso){
   const d=new Date(iso);
   document.getElementById('sigMetaTxt').textContent='Firmado el '+d.toLocaleDateString('es-ES')+' a las '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -991,28 +1011,27 @@ function showSigMeta(iso){
   document.getElementById('sigPad').classList.add('sig-done');
 }
 function confirmSign(){
-  if(!sig.has){toast("El cliente debe firmar para continuar");return;}
+  // si no hay trazo nuevo pero ya había firma guardada (ficha reabierta): avanzar directo
+  if(!sig.has){
+    if(draft.signature){ toStep('type'); return; }
+    toast("El cliente debe firmar para continuar");return;
+  }
   const c=document.getElementById('sigPad');
-  draft.signature=c.toDataURL('image/png');
-  draft.signedAt=new Date().toISOString();
+  // solo regenerar la firma si se ha dibujado una nueva en esta sesión
+  if(sig.fresh){
+    draft.signature=c.toDataURL('image/png');
+    draft.signedAt=new Date().toISOString();
+  }
   showSigMeta(draft.signedAt);
   autosave();
   toast("Firma registrada ✓");
-  // si hay email del cliente, ofrecer enviar; si no, continuar directo
-  if(draft.email){
-    document.getElementById('sigEmailCard').style.display='block';
-    // botón para continuar al siguiente paso
-    let cont=document.getElementById('sigContinueBtn');
-    if(!cont){
-      cont=document.createElement('button');cont.id='sigContinueBtn';cont.className='btn btn-primary';
-      cont.style.marginTop='10px';cont.textContent='Continuar a comprobaciones ›';
-      cont.onclick=()=>toStep('type');
-      document.getElementById('sigEmailCard').after(cont);
-    }
-    cont.style.display='flex';
-    cont.scrollIntoView({behavior:'smooth',block:'center'});
+  showSignContinue();
+  // si NO hay email, avanzar directo; si hay email, mostrar opciones y bajar a ellas
+  if(!draft.email){
+    setTimeout(()=>toStep('type'),300);
   }else{
-    setTimeout(()=>toStep('type'),400);
+    const cont=document.getElementById('sigContinueBtn');
+    if(cont)cont.scrollIntoView({behavior:'smooth',block:'center'});
   }
 }
 
