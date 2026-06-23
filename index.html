@@ -251,8 +251,8 @@
       <label class="field"><span>Marca y modelo</span><input type="text" class="up" id="f-model" placeholder="SEAT LEÓN" autocomplete="off"></label>
       <label class="field"><span>Orden de trabajo</span><input type="text" class="up" id="f-ot" placeholder="OT-0000" autocomplete="off"></label>
       <label class="field"><span>Operario que recibe el vehículo</span><input type="text" id="f-worker" placeholder="Nombre del trabajador" autocomplete="off"></label>
-      <label class="field"><span>Cliente (opcional)</span><input type="text" id="f-client" placeholder="Nombre del cliente" autocomplete="off"></label>
-      <label class="field" style="margin:0;"><span>Email del cliente (opcional)</span><input type="email" id="f-email" placeholder="cliente@correo.com" autocomplete="off" style="text-transform:none;"></label>
+      <label class="field"><span>Cliente (opcional)</span><input type="text" id="f-client" placeholder="Nombre del cliente" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="cli_nofill" data-lpignore="true"></label>
+      <label class="field" style="margin:0;"><span>Email del cliente (opcional)</span><input type="text" inputmode="email" id="f-email" placeholder="cliente@correo.com" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="email_nofill" data-lpignore="true" style="text-transform:none;"></label>
     </div>
     <button class="btn btn-primary" onclick="toStep('intake')">Revisar estado del coche ›</button>
   </section>
@@ -321,7 +321,7 @@
       <button class="btn btn-steel" id="sigEmailBtn" onclick="autoSendEmail()">✉ Enviar hoja al cliente ahora</button>
     </div>
 
-    <button class="btn btn-primary" onclick="confirmSign()">Confirmar firma y continuar ›</button>
+    <button class="btn btn-primary" id="sigConfirmBtn" onclick="confirmSign()">Confirmar firma y continuar ›</button>
   </section>
 
   <!-- ====== PASO 5: TIPO ====== -->
@@ -950,6 +950,7 @@ function saveDmg(){
 function renderSign(){
   sig.fresh=false;
   // reset botones de email/continuar
+  const cbtn=document.getElementById('sigConfirmBtn'); if(cbtn)cbtn.style.display='flex';
   const ec=document.getElementById('sigEmailCard');if(ec)ec.style.display='none';
   const cb=document.getElementById('sigContinueBtn');if(cb)cb.style.display='none';
   // resumen
@@ -972,17 +973,22 @@ function renderSign(){
 }
 // Muestra la tarjeta de email (si hay) y el botón de continuar
 function showSignContinue(){
+  // ya está firmado: ocultar el botón de confirmar (solo se necesita Continuar)
+  const cb=document.getElementById('sigConfirmBtn'); if(cb)cb.style.display='none';
   if(draft.email){
     const card=document.getElementById('sigEmailCard'); if(card)card.style.display='block';
-    let cont=document.getElementById('sigContinueBtn');
-    if(!cont){
-      cont=document.createElement('button');cont.id='sigContinueBtn';cont.className='btn btn-primary';
-      cont.style.marginTop='10px';cont.textContent='Continuar a comprobaciones ›';
-      cont.onclick=()=>toStep('type');
-      const c=document.getElementById('sigEmailCard'); if(c)c.after(cont);
-    }
-    cont.style.display='flex';
+    const msg=document.getElementById('sigEmailMsg');
+    if(msg&&!draft.emailSent)msg.innerHTML='Se enviará la hoja en PDF a:<br><b style="color:#1b3a5b;">'+draft.email+'</b><br><span style="font-size:12px;">Comprueba que el correo es correcto antes de enviar.</span>';
   }
+  let cont=document.getElementById('sigContinueBtn');
+  if(!cont){
+    cont=document.createElement('button');cont.id='sigContinueBtn';cont.className='btn btn-primary';
+    cont.style.marginTop='10px';cont.textContent='Continuar a comprobaciones ›';
+    cont.onclick=()=>toStep('type');
+    const anchor=document.getElementById('sigEmailCard')||document.getElementById('sigConfirmBtn');
+    if(anchor)anchor.after(cont);
+  }
+  cont.style.display='flex';
 }
 function setupSigPad(){
   const c=document.getElementById('sigPad');
@@ -1001,9 +1007,10 @@ function setupSigPad(){
 }
 function clearSig(){const c=document.getElementById('sigPad');c.getContext('2d').clearRect(0,0,c.width,c.height);sig.has=false;sig.fresh=false;
   document.getElementById('sigMeta').style.display='none';draft.signature=null;draft.signedAt=null;
-  // ocultar opciones de continuar hasta que vuelva a firmar
+  // ocultar opciones de continuar y volver a mostrar el botón de confirmar
   const cont=document.getElementById('sigContinueBtn');if(cont)cont.style.display='none';
-  const card=document.getElementById('sigEmailCard');if(card)card.style.display='none';}
+  const card=document.getElementById('sigEmailCard');if(card)card.style.display='none';
+  const cbtn=document.getElementById('sigConfirmBtn');if(cbtn)cbtn.style.display='flex';}
 function showSigMeta(iso){
   const d=new Date(iso);
   document.getElementById('sigMetaTxt').textContent='Firmado el '+d.toLocaleDateString('es-ES')+' a las '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -1159,6 +1166,7 @@ async function sendEmailFromDetail(id){
   const rec=loadAll().find(x=>x.id===id); if(!rec)return;
   if(!rec.email){toast("Este cliente no tiene email");return;}
   if(!window.__fbReady||!window.__fbReady()){toast("Sin conexión");return;}
+  if(!confirm("¿Enviar la hoja a este correo?\n\n"+rec.email+"\n\nCliente: "+(rec.client||"—")+"\nMatrícula: "+(rec.plate||"—"))) return;
   toast("Generando y enviando…");
   try{
     const norm=await recordWithDataUrls(rec);
@@ -1173,6 +1181,7 @@ async function autoSendEmail(){
   if(_sending)return;
   if(!draft||!draft.email){toast("Este cliente no tiene email");return;}
   if(!window.__fbReady||!window.__fbReady()){toast("Sin conexión: se enviará al recuperar WiFi");return;}
+  if(!confirm("¿Enviar la hoja a este correo?\n\n"+draft.email+"\n\nCliente: "+(draft.client||"—")+"\nMatrícula: "+(draft.plate||"—"))) return;
   const btn=document.getElementById('sigEmailBtn');
   _sending=true; if(btn){btn.textContent='Generando y enviando…';btn.disabled=true;}
   try{
